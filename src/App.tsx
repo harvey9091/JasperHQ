@@ -1,7 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AppLayout } from './layouts/AppLayout';
+import { Layout } from './components/layout/Layout';
 import { Dashboard } from './pages/Dashboard';
+import { Leads } from './pages/Leads';
+import { Crm } from './pages/Crm';
+import { Agents } from './pages/Agents';
 
 // Placeholder pages for later implementation
 const PlaceholderPage = ({ title }: { title: string }) => (
@@ -15,12 +18,13 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppLayout />}>
+        <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="leads" element={<PlaceholderPage title="Lead Research Module" />} />
-          <Route path="crm" element={<PlaceholderPage title="CRM Pipeline" />} />
-          <Route path="agents" element={<PlaceholderPage title="Agent Manager" />} />
+          <Route path="leads" element={<Leads />} />
+          <Route path="crm" element={<Crm />} />
+          <Route path="agents" element={<Agents />} />
           <Route path="analytics" element={<PlaceholderPage title="Analytics Suite" />} />
+          <Route path="email-generator" element={<PlaceholderPage title="Email Generator" />} />
           <Route path="settings" element={<PlaceholderPage title="System Settings" />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

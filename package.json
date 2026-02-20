@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
+    "@hello-pangea/dnd": "^18.0.1",
     "@supabase/supabase-js": "^2.91.1",
     "@vercel/analytics": "^1.6.1",
     "clsx": "^2.1.1",

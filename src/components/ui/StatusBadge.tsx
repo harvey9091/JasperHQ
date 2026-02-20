@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 
-type StatusType = 'online' | 'offline' | 'busy' | 'warning' | 'error' | 'success';
+type StatusType = 'online' | 'offline' | 'busy' | 'warning' | 'error' | 'success' | 'active' | 'new' | 'negotiating' | 'archived' | 'hold';
 
 interface StatusBadgeProps {
     status: StatusType;
@@ -10,21 +10,39 @@ interface StatusBadgeProps {
     pulsing?: boolean;
 }
 
-const styles = {
-    online: 'bg-neon-green/10 text-neon-green border-neon-green/30',
-    success: 'bg-neon-green/10 text-neon-green border-neon-green/30',
-    offline: 'bg-gray-500/10 text-gray-400 border-gray-500/30',
-    busy: 'bg-neon-amber/10 text-neon-amber border-neon-amber/30',
-    warning: 'bg-neon-amber/10 text-neon-amber border-neon-amber/30',
+// Map various nuances to core styles
+const styleMap: Record<StatusType, string> = {
+    // Core Statuses
+    online: 'bg-ember-primary/10 text-ember-primary border-ember-primary/30',
+    active: 'bg-ember-primary/10 text-ember-primary border-ember-primary/30',
+    success: 'bg-ember-primary/10 text-ember-primary border-ember-primary/30',
+
+    // Low Priority / Inactive
+    offline: 'bg-phoenix-surface text-phoenix-muted border-phoenix-border',
+    archived: 'bg-phoenix-surface text-phoenix-muted border-phoenix-border',
+
+    // Warning / In Progress
+    busy: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
+    warning: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
+    negotiating: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
+    new: 'bg-blue-500/10 text-blue-500 border-white/10', // Keep new as blue or white for contrast? Let's use Blue-ish or White
+    hold: 'bg-red-500/10 text-red-500 border-red-500/30',
+
+    // Error
     error: 'bg-red-500/10 text-red-500 border-red-500/30',
 };
 
-const dotColors = {
-    online: 'bg-neon-green',
-    success: 'bg-neon-green',
-    offline: 'bg-gray-500',
-    busy: 'bg-neon-amber',
-    warning: 'bg-neon-amber',
+const dotColors: Record<StatusType, string> = {
+    online: 'bg-ember-primary',
+    active: 'bg-ember-primary',
+    success: 'bg-ember-primary',
+    offline: 'bg-phoenix-muted',
+    archived: 'bg-phoenix-muted',
+    busy: 'bg-amber-500',
+    warning: 'bg-amber-500',
+    negotiating: 'bg-amber-500',
+    new: 'bg-blue-500',
+    hold: 'bg-red-500',
     error: 'bg-red-500',
 };
 
@@ -34,16 +52,19 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     className,
     pulsing = false
 }) => {
+    // Fallback for unmapped statuses
+    const safeStatus = styleMap[status] ? status : 'offline';
+
     return (
         <div className={clsx(
             'inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-xs font-medium uppercase tracking-wider',
-            styles[status],
+            styleMap[safeStatus],
             className
         )}>
-            <span className={clsx(
+            <div className={clsx(
                 'w-1.5 h-1.5 rounded-full',
-                dotColors[status],
-                pulsing && 'animate-pulse'
+                dotColors[safeStatus],
+                (pulsing || status === 'online' || status === 'active') && 'animate-pulse shadow-orange-micro'
             )} />
             {label || status}
         </div>

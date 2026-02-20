@@ -5,27 +5,38 @@ import { motion } from 'framer-motion';
 interface NeonCardProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
     className?: string;
-    glowColor?: 'green' | 'teal' | 'amber';
+    glowColor?: 'green' | 'teal' | 'amber' | 'mint';
+    variant?: 'glass' | 'panel' | 'primary';
 }
 
 const glowMap = {
-    green: 'hover:border-neon-green/50 hover:shadow-[0_0_20px_rgba(75,255,136,0.1)]',
-    teal: 'hover:border-neon-teal/50 hover:shadow-[0_0_20px_rgba(57,196,175,0.1)]',
-    amber: 'hover:border-neon-amber/50 hover:shadow-[0_0_20px_rgba(224,95,47,0.1)]',
+    green: 'hover:border-neon-green/50 hover:shadow-bloom',
+    teal: 'hover:border-neon-teal/50 hover:shadow-bloom',
+    amber: 'hover:border-neon-amber/50 hover:shadow-[0_0_80px_rgba(230,126,34,0.18)]',
+    mint: 'hover:border-neon-mint/50 hover:shadow-[0_0_80px_rgba(200,255,215,0.18)]',
+};
+
+const variantMap = {
+    glass: 'bg-jasper-surface/40 backdrop-blur-md border border-white/5 shadow-glass-heavy',
+    panel: 'bg-jasper-panel border border-jasper-border shadow-panel-depth',
+    primary: 'bg-gradient-to-br from-jasper-panel to-jasper-dark border border-white/10 relative overflow-hidden shadow-aura',
 };
 
 export const NeonCard: React.FC<NeonCardProps> = ({
     children,
     className,
     glowColor = 'green',
+    variant = 'panel',
     ...props
 }) => {
     return (
         <motion.div
-            whileHover={{ y: -2 }}
+            whileHover={{ y: -2, scale: 1.005 }}
+            transition={{ duration: 0.3 }}
             className={clsx(
-                'relative overflow-hidden rounded-xl border border-white/5 bg-jasper-panel/60 p-6 backdrop-blur-md transition-all duration-300',
-                'before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/5 before:to-transparent before:opacity-0 hover:before:opacity-100',
+                'relative rounded-2xl p-6 transition-all duration-500',
+                variantMap[variant],
+                'after:absolute after:inset-0 after:rounded-2xl after:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] after:pointer-events-none', // Inner bezel
                 glowMap[glowColor],
                 className
             )}
@@ -33,9 +44,8 @@ export const NeonCard: React.FC<NeonCardProps> = ({
         >
             <div className="relative z-10">{children}</div>
 
-            {/* Industrial corner accents */}
-            <div className="absolute top-0 right-0 h-4 w-4 border-r border-t border-white/10 opacity-50" />
-            <div className="absolute bottom-0 left-0 h-4 w-4 border-l border-b border-white/10 opacity-50" />
+            {/* Premium internal vignette */}
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
         </motion.div>
     );
 };

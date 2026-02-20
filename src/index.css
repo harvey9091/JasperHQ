@@ -1,50 +1,170 @@
+/* Phoenix Industrial UI — Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ──────────────────────────────────────
+   BASE RESET
+────────────────────────────────────── */
 @layer base {
-  :root {
-    --color-jasper-dark: #0D0F10;
-    --color-jasper-panel: #16191B;
-    --color-jasper-surface: #1D2123;
-    --color-neon-green: #4BFF88;
-    
-    color-scheme: dark;
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
-    background-color: var(--color-jasper-dark);
-    color: #e5e7eb;
+    margin: 0;
+    padding: 0;
     font-family: 'Inter', sans-serif;
+    background-color: #111215;
+    background-image: linear-gradient(160deg, #111215 0%, #161820 50%, #1C1E22 100%);
+    background-attachment: fixed;
+    color: #E2E4E9;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    min-height: 100vh;
   }
 
-  /* Custom Scrollbar for "Industrial" feel */
+  /* Noise texture overlay (subtle grain) */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    /* SVG-based noise — no external file needed */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 1;
+    mix-blend-mode: overlay;
+  }
+
+  /* Edge vignette */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Industrial Scrollbar ── */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #16191B; 
+    background: #111215;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #2A2F33; 
-    border-radius: 4px;
-    border: 1px solid #16191B;
+    background: #2A2D32;
+    border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #39C4AF; 
+    background: #FF7A29;
+  }
+
+  /* ── Selection ── */
+  ::selection {
+    background: rgba(255, 122, 41, 0.25);
+    color: #FF7A29;
   }
 }
 
+/* ──────────────────────────────────────
+   UTILITY CLASSES
+────────────────────────────────────── */
 @layer utilities {
-  .text-glow {
-    text-shadow: 0 0 10px rgba(75, 255, 136, 0.5);
+
+  /* ── Stone Panels ── */
+  .ph-panel {
+    background: linear-gradient(145deg, #181A1D 0%, #202226 100%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 16px rgba(0, 0, 0, 0.45);
   }
-  
-  .glass-panel {
-    @apply bg-jasper-panel/80 backdrop-blur-md border border-white/5;
+
+  .ph-panel-deep {
+    background: linear-gradient(145deg, #16181B 0%, #1E2023 100%);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 32px rgba(0, 0, 0, 0.6);
+  }
+
+  .ph-panel-slate {
+    background: linear-gradient(145deg, #202225 0%, #26282C 100%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 16px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ── Dotted Tech Grid Overlay ── */
+  .ph-dot-grid::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    background-size: 18px 18px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Metal top-edge sheen */
+  .ph-sheen::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* Orange glow text */
+  .text-ember-glow {
+    color: #FF7A29;
+    text-shadow: 0 0 16px rgba(255, 122, 41, 0.5);
+  }
+
+  /* Orange micro-separator line */
+  .ph-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 122, 41, 0.25), transparent);
+  }
+
+  /* Font utilities */
+  .font-display {
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Animate: energy flow sweep */
+  .flow-sweep {
+    animation: flowSweep 3s linear infinite;
+  }
+
+  @keyframes flowSweep {
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(300%);
+    }
   }
 }

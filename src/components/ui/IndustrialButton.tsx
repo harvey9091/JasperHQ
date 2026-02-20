@@ -1,9 +1,9 @@
 import React from 'react';
-import clsx from 'clsx';
 import { motion } from 'framer-motion';
+import clsx from 'clsx';
 
 interface IndustrialButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'danger';
+    variant?: 'primary' | 'secondary' | 'ghost';
     size?: 'sm' | 'md' | 'lg';
     icon?: React.ElementType;
 }
@@ -16,31 +16,59 @@ export const IndustrialButton: React.FC<IndustrialButtonProps> = ({
     icon: Icon,
     ...props
 }) => {
-    const baseStyles = 'inline-flex items-center justify-center font-bold tracking-wide uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
-
-    const variants = {
-        primary: 'bg-neon-green text-jasper-dark shadow-[0_0_20px_rgba(75,255,136,0.2)] hover:shadow-[0_0_30px_rgba(75,255,136,0.4)] hover:bg-white',
-        secondary: 'bg-transparent border border-neon-green/30 text-neon-green hover:bg-neon-green/10',
-        danger: 'bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500/20',
-    };
+    const base = 'relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-xl font-bold uppercase tracking-[0.1em] transition-all duration-200 cursor-pointer select-none';
 
     const sizes = {
-        sm: 'h-8 px-4 text-xs rounded-sm',
-        md: 'h-10 px-6 text-sm rounded-md',
-        lg: 'h-12 px-8 text-base rounded-md',
+        sm: 'h-9  px-4  text-[10px]',
+        md: 'h-11 px-6  text-[11px]',
+        lg: 'h-13 px-8  text-[12px]',
+    };
+
+    // Inline styles for precision (no Tailwind class conflicts)
+    const variantStyles: Record<string, React.CSSProperties> = {
+        primary: {
+            background: 'linear-gradient(145deg, #1C1E22, #131416)',
+            border: '1px solid rgba(255,122,41,0.5)',
+            color: '#FF7A29',
+            boxShadow: '0 0 16px rgba(255,122,41,0.18), inset 0 1px 0 rgba(255,255,255,0.04)',
+            fontFamily: 'Orbitron, sans-serif',
+        },
+        secondary: {
+            background: 'linear-gradient(145deg, #181A1D, #1C1E21)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: '#9CA0A8',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+            fontFamily: 'Orbitron, sans-serif',
+        },
+        ghost: {
+            background: 'transparent',
+            border: '1px solid transparent',
+            color: '#7A7F8A',
+            fontFamily: 'Orbitron, sans-serif',
+        },
     };
 
     return (
         <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={clsx(baseStyles, variants[variant], sizes[size], className)}
-            {...props}
+            whileHover={{ scale: 1.015 }}
+            whileTap={{ scale: 0.975 }}
+            className={clsx(base, sizes[size], className)}
+            style={variantStyles[variant]}
+            {...(props as any)}
         >
-            {Icon && <Icon className="w-4 h-4 mr-2" />}
-            {children}
-            {/* Clip-path detail for industrial look */}
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-current opacity-20 rotate-45" />
+            {/* Top bevel edge */}
+            <span className="absolute inset-x-0 top-0 h-px" style={{ background: variant === 'primary' ? 'rgba(255,122,41,0.45)' : 'rgba(255,255,255,0.06)' }} />
+
+            {/* Hover orange trail */}
+            <motion.span
+                className="absolute inset-0 pointer-events-none"
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 1 }}
+                style={{ background: 'linear-gradient(90deg, transparent, rgba(255,122,41,0.07), transparent)' }}
+            />
+
+            {Icon && <Icon size={13} />}
+            <span className="relative">{children}</span>
         </motion.button>
     );
 };
