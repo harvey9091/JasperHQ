@@ -4,10 +4,11 @@ import { Bell, Grid, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 
-// ── REAL JasperHQ Navigation Items ────────────────────────────────────────────
-// DO NOT add new tabs. DO NOT rename existing routes.
+// ── JasperHQ Navigation Items ─────────────────────────────────────────────────
 const NAV_ITEMS = [
     { name: 'Dashboard', path: '/' },
+    { name: 'Research', path: '/research' },
+    { name: 'Planner', path: '/planner' },
     { name: 'Leads', path: '/leads' },
     { name: 'CRM', path: '/crm' },
     { name: 'Agents', path: '/agents' },

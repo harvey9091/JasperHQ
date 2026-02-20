@@ -44,12 +44,12 @@ const AgentNetworkCanvas: React.FC = () => {
 
     // Layout constants (will scale via CSS)
     const W = 900, H_CVS = 320;
-    const ARC_X = 82;            // arc centre X (left side)
-    const ARC_CY = H_CVS / 2;   // arc vertical centre
-    const ARC_R = 110;          // half-radius of the semi-circle
-    const BOX_X = 620;          // left edge of agent boxes area
-    const BOX_W = 200, BOX_H = 38;
-    const BOX_GAP = 12;
+    const ARC_X = 30;            // flush-left arc centre
+    const ARC_CY = H_CVS / 2;
+    const ARC_R = 98;            // arc radius
+    const BOX_X = 520;           // left boundary of agent boxes area
+    const BOX_W = 82, BOX_H = 34;
+    const BOX_GAP = 10;
     const COLS = 2;
 
     // Particle state (bubbles inside arc)
@@ -154,14 +154,18 @@ const AgentNetworkCanvas: React.FC = () => {
             ctx.restore();
 
             // ── 5. Wave lines (arc → agent boxes) ──
+            // Scattered box positions (fixed random layout seeded by index)
+            const SCATTER: { bx: number; by: number }[] = [
+                { bx: 540, by: 30 },
+                { bx: 680, by: 55 },
+                { bx: 555, by: 120 },
+                { bx: 700, by: 140 },
+                { bx: 545, by: 220 },
+                { bx: 690, by: 240 },
+            ];
+
             AGENTS.forEach((agent, i) => {
-                const col = i % COLS;
-                const row = Math.floor(i / COLS);
-                const colCount = COLS;
-                const totalRows = Math.ceil(AGENTS.length / COLS);
-                const colW = 240;
-                const bx = BOX_X + col * (colW + 16);
-                const by = (H_CVS - (totalRows * (BOX_H + BOX_GAP) - BOX_GAP)) / 2 + row * (BOX_H + BOX_GAP);
+                const { bx, by } = SCATTER[i] ?? { bx: BOX_X + (i % COLS) * 160, by: 40 + Math.floor(i / COLS) * 80 };
                 const targetY = by + BOX_H / 2;
 
                 // Arc emission point (right side of arc)
@@ -262,69 +266,83 @@ const AgentNetworkCanvas: React.FC = () => {
     );
 };
 
-// ─── Agent Box Overlay (HTML, right side) ─────────────────────────────────────
-const AgentBoxes: React.FC = () => {
-    const COLS = 2;
-    const totalRows = Math.ceil(AGENTS.length / COLS);
-    return (
-        <div style={{
-            position: 'absolute', top: 0, right: 0, bottom: 0,
-            width: '54%',
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gridTemplateRows: `repeat(${totalRows}, 1fr)`,
-            gap: 12,
-            alignContent: 'center',
-            padding: '20px 28px 20px 0',
-        }}>
-            {AGENTS.map((agent, i) => {
-                const cfg = ST[agent.status];
-                const active = agent.status === 'ACTIVE' || agent.status === 'RUNNING';
-                return (
-                    <motion.div
-                        key={agent.id}
-                        initial={{ opacity: 0, x: 24 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 + i * 0.08, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            padding: '9px 14px',
-                            borderRadius: 10,
-                            background: active
-                                ? 'linear-gradient(135deg,rgba(255,122,41,0.07),rgba(30,32,36,0.95))'
-                                : 'rgba(22,24,27,0.85)',
-                            border: `1px solid ${active ? 'rgba(255,122,41,0.28)' : 'rgba(255,255,255,0.05)'}`,
-                            boxShadow: active
-                                ? '0 0 14px rgba(255,122,41,0.10), inset 0 1px 0 rgba(255,255,255,0.04)'
-                                : 'inset 0 1px 0 rgba(255,255,255,0.03)',
-                            backdropFilter: 'blur(8px)',
-                            position: 'relative',
-                            overflow: 'hidden',
-                        }}
-                    >
-                        {/* Top accent bar for active */}
-                        {active && (
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,rgba(255,122,41,0.6),rgba(255,122,41,0.2),transparent)' }} />
-                        )}
-                        {/* Icon */}
-                        <div style={{ width: 28, height: 28, borderRadius: 7, background: `${cfg.color}14`, border: `1px solid ${cfg.color}28`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <Cpu size={12} style={{ color: cfg.color }} />
-                        </div>
-                        {/* Name + Role */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontFamily: H, fontSize: 11, fontWeight: 700, color: active ? '#FFF' : '#6A6F7A', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.name}</p>
-                            <p style={{ fontFamily: BD, fontSize: 9, color: '#4A4F5A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.role}</p>
-                        </div>
-                        {/* Status dot */}
-                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: cfg.color, boxShadow: active ? `0 0 6px ${cfg.glow}` : undefined, flexShrink: 0 }} />
-                    </motion.div>
-                );
-            })}
-        </div>
-    );
-};
+// ─── Agent Box Overlay — scattered floating boxes ─────────────────────────────
+// Positions mirror the SCATTER array in the canvas draw function (900px coordinate space)
+// Boxes are 82×34px canvas units → converted to % of container width
+const SCATTER_POS = [
+    { lPct: '60%', top: 22 },
+    { lPct: '76%', top: 48 },
+    { lPct: '61%', top: 114 },
+    { lPct: '78%', top: 134 },
+    { lPct: '60%', top: 210 },
+    { lPct: '76%', top: 230 },
+];
+
+const AgentBoxes: React.FC = () => (
+    <>
+        {AGENTS.map((agent, i) => {
+            const cfg = ST[agent.status];
+            const active = agent.status === 'ACTIVE' || agent.status === 'RUNNING';
+            const pos = SCATTER_POS[i] ?? { lPct: '60%', top: 40 + i * 46 };
+            const floatAmp = 2.5 + (i % 3) * 0.8; // 2.5–4.5px
+            const floatDur = 2.8 + (i % 4) * 0.5; // 2.8–4.3s
+            return (
+                <motion.div
+                    key={agent.id}
+                    initial={{ opacity: 0, x: 16 }}
+                    animate={{
+                        opacity: 1,
+                        x: 0,
+                        y: [0, -floatAmp, 0, floatAmp, 0],
+                    }}
+                    transition={{
+                        opacity: { delay: 0.15 + i * 0.07, duration: 0.4 },
+                        x: { delay: 0.15 + i * 0.07, duration: 0.4 },
+                        y: { delay: i * 0.1, duration: floatDur, repeat: Infinity, ease: 'easeInOut' },
+                    }}
+                    whileHover={{
+                        boxShadow: active
+                            ? '0 0 22px rgba(255,122,41,0.28)'
+                            : '0 0 12px rgba(255,255,255,0.05)',
+                    }}
+                    style={{
+                        position: 'absolute',
+                        left: pos.lPct,
+                        top: pos.top,
+                        width: 120,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 7,
+                        padding: '6px 10px',
+                        borderRadius: 9,
+                        background: active
+                            ? 'linear-gradient(135deg,rgba(255,122,41,0.08),rgba(22,24,28,0.96))'
+                            : 'rgba(18,20,23,0.9)',
+                        border: `1px solid ${active ? 'rgba(255,122,41,0.32)' : 'rgba(255,255,255,0.06)'}`,
+                        boxShadow: active
+                            ? '0 0 12px rgba(255,122,41,0.10), inset 0 1px 0 rgba(255,255,255,0.04)'
+                            : 'inset 0 1px 0 rgba(255,255,255,0.03)',
+                        backdropFilter: 'blur(10px)',
+                        overflow: 'hidden',
+                        cursor: 'default',
+                    }}
+                >
+                    {active && (
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,rgba(255,122,41,0.7),rgba(255,122,41,0.2),transparent)' }} />
+                    )}
+                    <div style={{ width: 20, height: 20, borderRadius: 6, background: `${cfg.color}18`, border: `1px solid ${cfg.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Cpu size={10} style={{ color: cfg.color }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontFamily: H, fontSize: 9, fontWeight: 700, color: active ? '#FFF' : '#5A5F6A', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.name}</p>
+                        <p style={{ fontFamily: BD, fontSize: 8, color: '#3A3F4A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>{agent.role}</p>
+                    </div>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.color, boxShadow: active ? `0 0 5px ${cfg.glow}` : undefined, flexShrink: 0 }} />
+                </motion.div>
+            );
+        })}
+    </>
+);
 
 // ─── Agent Card ───────────────────────────────────────────────────────────────
 const AgentCard: React.FC<{ agent: Agent; i: number }> = ({ agent, i }) => {
