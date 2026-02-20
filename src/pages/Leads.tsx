@@ -1,501 +1,348 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Download, Plus, MoreVertical, ChevronRight, TrendingUp } from 'lucide-react';
+import { Search, Plus, ChevronDown, ChevronRight, X, Twitter, Globe, Linkedin, Instagram, Facebook, Upload } from 'lucide-react';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type Status = 'active' | 'negotiating' | 'archived' | 'new';
-
-interface Lead {
-    id: string;
-    name: string;
-    contact: string;
-    initials: string;
-    value: string;
-    status: Status;
-    score: number;
-    lastAction: string;
-    avatarColor: string;
-}
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_LEADS: Lead[] = [
-    { id: 'LD-001', name: 'CyberDyne Systems', contact: 'Miles Dyson', initials: 'MD', value: '$125,000', status: 'active', score: 98, lastAction: 'Contract Sent', avatarColor: '#2A2C32' },
-    { id: 'LD-002', name: 'Tyrell Corp', contact: 'Eldon Tyrell', initials: 'ET', value: '$850,000', status: 'negotiating', score: 95, lastAction: 'Meeting Scheduled', avatarColor: '#212529' },
-    { id: 'LD-003', name: 'Weyland-Yutani', contact: 'Carter Burke', initials: 'CB', value: '$2,500,000', status: 'new', score: 88, lastAction: 'Inbound Inquiry', avatarColor: '#282A30' },
-    { id: 'LD-004', name: 'Massive Dynamic', contact: 'Nina Sharp', initials: 'NS', value: '$450,000', status: 'active', score: 92, lastAction: 'Demo Completed', avatarColor: '#222427' },
-    { id: 'LD-005', name: 'InGen', contact: 'John Hammond', initials: 'JH', value: '$12,000,000', status: 'negotiating', score: 45, lastAction: 'Budget Review', avatarColor: '#252729' },
-    { id: 'LD-006', name: 'Aperture Science', contact: 'Cave Johnson', initials: 'CJ', value: '$85,000', status: 'archived', score: 12, lastAction: 'No Response', avatarColor: '#1E2024' },
-];
+const H = 'JetBrains Mono, monospace';
+const BD = 'Inter, sans-serif';
+const MN = 'JetBrains Mono, monospace';
 
 // ─── Status config ────────────────────────────────────────────────────────────
-
-const STATUS_CONFIG: Record<Status, { label: string; color: string; glow: string; dot: string }> = {
-    active: { label: 'ACTIVE', color: '#4BE77F', glow: 'rgba(75,231,127,0.35)', dot: '#4BE77F' },
-    negotiating: { label: 'NEGOTIATING', color: '#FF7A29', glow: 'rgba(255,122,41,0.35)', dot: '#FF7A29' },
-    new: { label: 'NEW', color: '#FFA057', glow: 'rgba(255,160,87,0.35)', dot: '#FFA057' },
-    archived: { label: 'ARCHIVED', color: '#6F6F72', glow: 'rgba(111,111,114,0.2)', dot: '#6F6F72' },
+interface StatusCfg { color: string; bg: string }
+const STATUS: Record<string, StatusCfg> = {
+    Active: { color: '#4BE77F', bg: 'rgba(75,231,127,0.08)' },
+    Negotiating: { color: '#FF7A29', bg: 'rgba(255,122,41,0.08)' },
+    New: { color: '#7A9FFF', bg: 'rgba(122,159,255,0.08)' },
+    Archived: { color: '#6F6F72', bg: 'rgba(111,111,114,0.08)' },
 };
 
-const TABS = ['All', 'Active', 'Negotiating', 'Archived'];
+interface Lead {
+    id: string; initials: string; name: string; company: string;
+    email: string; phone: string; value: string; score: number;
+    status: 'Active' | 'Negotiating' | 'New' | 'Archived';
+    twitter?: string; website?: string; linkedin?: string;
+    instagram?: string; facebook?: string; tiktok?: string;
+    notes?: string; lastAction?: string;
+}
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+const LEADS: Lead[] = [
+    { id: 'L1', initials: 'AK', name: 'Alex Khatri', company: 'Nexus Systems', email: 'alex@nexus.io', phone: '+1 555 0101', value: '$48,000', score: 88, status: 'Active', linkedin: 'alexkhatri', twitter: '@alexk', website: 'nexus.io', lastAction: 'Email sent 2d ago', notes: 'Interested in enterprise integration package.' },
+    { id: 'L2', initials: 'SM', name: 'Sofia Martinez', company: 'ArcLight Tech', email: 'sofia@arclight.ca', phone: '+1 555 0199', value: '$125,000', score: 72, status: 'Negotiating', twitter: '@sofiam', website: 'arclight.ca', linkedin: 'sofiamartinez', lastAction: 'Call — 4d ago', notes: 'Proposal review in progress.' },
+    { id: 'L3', initials: 'JO', name: 'James Okafor', company: 'Helix Analytics', email: 'j.oka@helix.ai', phone: '+1 555 0234', value: '$20,000', score: 55, status: 'New', website: 'helix.ai', lastAction: 'First contact 7d ago', notes: 'No reply yet, follow up needed.' },
+    { id: 'L4', initials: 'PT', name: 'Priya Tewari', company: 'Quantum Ventures', email: 'priya@qv.net', phone: '+1 555 0312', value: '$85,000', score: 91, status: 'Active', linkedin: 'priyatewari', instagram: '@priyatewari', lastAction: 'Demo booked tomorrow', notes: 'Very warm lead, high priority.' },
+    { id: 'L5', initials: 'CO', name: 'Calvin Osei', company: 'Orion Works', email: 'c.osei@orion.co', phone: '+1 555 0405', value: '$12,000', score: 30, status: 'Archived', lastAction: 'Archived 3w ago', notes: 'Deal lost — budget constraints.' },
+];
 
-const PhoenixInput: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { icon?: React.ElementType }> = ({ icon: Icon, ...props }) => (
-    <div className="relative flex-1">
-        {Icon && (
-            <Icon
-                size={14}
-                style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#FF7A29' }}
-            />
-        )}
-        <input
-            {...props}
-            style={{
-                width: '100%',
-                background: 'linear-gradient(145deg, #131416, #181A1D)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 10,
-                paddingLeft: Icon ? 38 : 14,
-                paddingRight: 14,
-                paddingTop: 9,
-                paddingBottom: 9,
-                fontSize: 13,
-                color: '#E2E4E9',
-                outline: 'none',
-                boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)',
-                fontFamily: 'Inter, sans-serif',
-                caretColor: '#FF7A29',
-                ...(props.style ?? {}),
-            }}
-            className="transition-all duration-200 focus:ring-0 placeholder:text-[#4A4F5A]"
-            onFocus={e => {
-                e.target.style.border = '1px solid rgba(255,122,41,0.35)';
-                e.target.style.boxShadow = 'inset 0 2px 8px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,122,41,0.15)';
-            }}
-            onBlur={e => {
-                e.target.style.border = '1px solid rgba(255,255,255,0.06)';
-                e.target.style.boxShadow = 'inset 0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)';
-            }}
-        />
-    </div>
-);
+const TABS = ['All', 'Active', 'Negotiating', 'New', 'Archived'];
 
-const StatusPill: React.FC<{ status: Status }> = ({ status }) => {
-    const cfg = STATUS_CONFIG[status];
+// ─── Input helper ─────────────────────────────────────────────────────────────
+const PhInput: React.FC<{ label: string; value: string; onChange: (v: string) => void; placeholder?: string; multiline?: boolean; half?: boolean }> =
+    ({ label, value, onChange, placeholder, multiline }) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minWidth: 0 }}>
+            <label style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.22em', color: '#7A7F8A', textTransform: 'uppercase' }}>{label}</label>
+            {multiline
+                ? <textarea rows={3} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+                    style={{ width: '100%', borderRadius: 10, padding: '10px 14px', background: 'linear-gradient(145deg,#131416,#181A1D)', border: '1px solid rgba(255,255,255,0.07)', color: '#E2E4E9', fontFamily: BD, fontSize: 13, caretColor: '#FF7A29', resize: 'vertical', outline: 'none', boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3)' }} className="ph-input" />
+                : <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+                    style={{ width: '100%', borderRadius: 10, padding: '10px 14px', background: 'linear-gradient(145deg,#131416,#181A1D)', border: '1px solid rgba(255,255,255,0.07)', color: '#E2E4E9', fontFamily: BD, fontSize: 13, caretColor: '#FF7A29', outline: 'none', boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3)' }} />}
+        </div>
+    );
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+const emptyForm = (): Lead => ({ id: '', initials: '', name: '', company: '', email: '', phone: '', value: '', score: 50, status: 'New', notes: '' });
+
+const AddLeadModal: React.FC<{ onClose: () => void; onSave: (l: Lead) => void }> = ({ onClose, onSave }) => {
+    const [f, setF] = useState<Lead>(emptyForm());
+    const set = (k: keyof Lead) => (v: string) => setF(p => ({ ...p, [k]: v }));
+    const initials = f.name.split(' ').map(w => w[0] || '').join('').slice(0, 2).toUpperCase() || '?';
+
     return (
-        <span
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md"
-            style={{
-                background: cfg.glow.replace('0.35', '0.08'),
-                border: `1px solid ${cfg.color}28`,
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: '0.12em',
-                color: cfg.color,
-            }}
-        >
-            {/* LED dot */}
-            <span
-                className="rounded-full shrink-0"
-                style={{
-                    width: 5, height: 5,
-                    background: cfg.dot,
-                    boxShadow: `0 0 5px ${cfg.glow}`,
-                    animation: status === 'active' || status === 'negotiating' ? 'pulse 1.8s ease-in-out infinite' : undefined,
-                }}
-            />
-            {cfg.label}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)', padding: 24 }}>
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+                style={{ width: '100%', maxWidth: 760, maxHeight: '90vh', overflowY: 'auto', borderRadius: 20, background: 'linear-gradient(145deg,#181A1D,#1E2023)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 0 60px rgba(255,122,41,0.12),0 32px 80px rgba(0,0,0,0.7)', position: 'relative' }}>
+
+                {/* Top orange glow accent */}
+                <div style={{ position: 'absolute', top: -1, left: 48, right: 48, height: 2, borderRadius: 99, background: 'linear-gradient(90deg,transparent,rgba(255,122,41,0.7),transparent)' }} />
+
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '28px 32px 0' }}>
+                    <div>
+                        <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.28em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 8 }}>// New Record</p>
+                        <h2 style={{ fontFamily: H, fontSize: 22, fontWeight: 900, color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Add Lead</h2>
+                    </div>
+                    <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#7A7F8A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} /></motion.button>
+                </div>
+
+                <div style={{ padding: '24px 32px 32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {/* Avatar preview */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(145deg,#1E2023,#252830)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.4),0 0 14px rgba(255,122,41,0.09)' }}>
+                            <span style={{ fontFamily: H, fontSize: 22, fontWeight: 900, color: '#FF7A29' }}>{initials}</span>
+                        </div>
+                        <motion.button whileHover={{ borderColor: 'rgba(255,122,41,0.4)' }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 18px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', color: '#7A7F8A', fontFamily: BD, fontSize: 12, cursor: 'pointer' }}>
+                            <Upload size={13} /> Upload Avatar
+                        </motion.button>
+                    </div>
+
+                    {/* Core fields */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <PhInput label="Company Name" value={f.company} onChange={set('company')} placeholder="Acme Corp" />
+                        <PhInput label="Contact Name" value={f.name} onChange={set('name')} placeholder="Jane Doe" />
+                        <PhInput label="Email" value={f.email} onChange={set('email')} placeholder="jane@acme.com" />
+                        <PhInput label="Phone" value={f.phone} onChange={set('phone')} placeholder="+1 555 0000" />
+                        <PhInput label="Deal Value" value={f.value} onChange={set('value')} placeholder="$50,000" />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <label style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.22em', color: '#7A7F8A', textTransform: 'uppercase' }}>Lead Score</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <input type="range" min={0} max={100} value={f.score} onChange={e => setF(p => ({ ...p, score: +e.target.value }))} style={{ flex: 1, accentColor: '#FF7A29' }} />
+                                <span style={{ fontFamily: BD, fontSize: 14, fontWeight: 700, color: '#FF7A29', minWidth: 36, textAlign: 'right' }}>{f.score}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Status */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <label style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.22em', color: '#7A7F8A', textTransform: 'uppercase' }}>Status</label>
+                        <select value={f.status} onChange={e => setF(p => ({ ...p, status: e.target.value as Lead['status'] }))}
+                            style={{ padding: '10px 14px', borderRadius: 10, background: 'linear-gradient(145deg,#131416,#181A1D)', border: '1px solid rgba(255,255,255,0.07)', color: STATUS[f.status]?.color || '#E2E4E9', fontFamily: BD, fontSize: 13, outline: 'none', cursor: 'pointer' }}>
+                            {Object.keys(STATUS).map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                    </div>
+
+                    {/* Socials */}
+                    <div>
+                        <p style={{ fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', color: '#E2E4E9', textTransform: 'uppercase', marginBottom: 14 }}>Socials</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                            <PhInput label="Twitter" value={f.twitter || ''} onChange={set('twitter')} placeholder="@handle" />
+                            <PhInput label="Website" value={f.website || ''} onChange={set('website')} placeholder="company.com" />
+                            <PhInput label="LinkedIn" value={f.linkedin || ''} onChange={set('linkedin')} placeholder="linkedin.com/in/..." />
+                            <PhInput label="Instagram" value={f.instagram || ''} onChange={set('instagram')} placeholder="@handle" />
+                            <PhInput label="Facebook" value={f.facebook || ''} onChange={set('facebook')} placeholder="facebook.com/..." />
+                            <PhInput label="TikTok" value={f.tiktok || ''} onChange={set('tiktok')} placeholder="@handle" />
+                        </div>
+                    </div>
+
+                    {/* Notes */}
+                    <PhInput label="Notes" value={f.notes || ''} onChange={set('notes')} placeholder="Add any relevant notes about this lead..." multiline />
+
+                    {/* Research Memory placeholder */}
+                    <div style={{ borderRadius: 12, padding: '16px 18px', background: 'rgba(255,122,41,0.03)', border: '1px dashed rgba(255,122,41,0.18)' }}>
+                        <p style={{ fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', color: '#FF7A29', marginBottom: 6 }}>RESEARCH MEMORY</p>
+                        <p style={{ fontFamily: BD, fontSize: 12, color: '#4A4F5A', lineHeight: 1.6 }}>Agent-generated intelligence will appear here once research runs. This connects to your autonomous research module.</p>
+                    </div>
+
+                    {/* Save */}
+                    <motion.button whileHover={{ scale: 1.01, boxShadow: '0 0 28px rgba(255,122,41,0.32)' }} whileTap={{ scale: 0.98 }}
+                        onClick={() => { onSave({ ...f, id: `L${Date.now()}`, initials: initials || '?' }); onClose(); }}
+                        style={{ width: '100%', padding: '14px', borderRadius: 12, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.5)', color: '#FF7A29', fontFamily: H, fontSize: 11, fontWeight: 700, letterSpacing: '0.16em', cursor: 'pointer', boxShadow: '0 0 18px rgba(255,122,41,0.18),inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+                        SAVE LEAD
+                    </motion.button>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
+
+// ─── Expanded drawer ──────────────────────────────────────────────────────────
+const LeadDrawer: React.FC<{ lead: Lead }> = ({ lead }) => {
+    const socials: { icon: typeof Twitter; link?: string; label: string }[] = [
+        { icon: Twitter, link: lead.twitter, label: 'Twitter' },
+        { icon: Globe, link: lead.website, label: 'Website' },
+        { icon: Linkedin, link: lead.linkedin, label: 'LinkedIn' },
+        { icon: Instagram, link: lead.instagram, label: 'Instagram' },
+        { icon: Facebook, link: lead.facebook, label: 'Facebook' },
+    ].filter(s => s.link);
+    return (
+        <motion.tr key="drawer" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <td colSpan={6} style={{ padding: 0 }}>
+                <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden' }}>
+                    <div style={{ margin: '0 8px 12px', borderRadius: 14, padding: '24px 28px', background: 'linear-gradient(145deg,#16181B,#1C1E21)', border: '1px solid rgba(255,122,41,0.12)', boxShadow: 'inset 0 2px 12px rgba(0,0,0,0.4)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr', gap: 28, alignItems: 'start' }}>
+                            {/* Avatar */}
+                            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'linear-gradient(145deg,#1E2023,#252830)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.4),0 0 14px rgba(255,122,41,0.09)' }}>
+                                <span style={{ fontFamily: H, fontSize: 20, fontWeight: 900, color: '#FF7A29' }}>{lead.initials}</span>
+                            </div>
+                            {/* Details */}
+                            <div>
+                                <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.28em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 4 }}>Contact Details</p>
+                                <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: '#E2E4E9', marginBottom: 4 }}>{lead.name}</p>
+                                <p style={{ fontFamily: BD, fontSize: 12, color: '#7A7F8A', marginBottom: 2 }}>{lead.email}</p>
+                                <p style={{ fontFamily: BD, fontSize: 12, color: '#7A7F8A', marginBottom: 12 }}>{lead.phone}</p>
+                                {socials.length > 0 && (
+                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                        {socials.map(s => (
+                                            <motion.a key={s.label} href="#" whileHover={{ borderColor: 'rgba(255,122,41,0.5)', color: '#FF7A29' }}
+                                                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', color: '#7A7F8A', fontFamily: BD, fontSize: 11, textDecoration: 'none', transition: 'all 0.2s' }}>
+                                                <s.icon size={11} />{s.label}
+                                            </motion.a>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            {/* Notes + timeline */}
+                            <div>
+                                {lead.notes && (
+                                    <div style={{ borderRadius: 10, padding: '12px 14px', background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: 14 }}>
+                                        <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.22em', color: '#7A7F8A', marginBottom: 6 }}>NOTES</p>
+                                        <p style={{ fontFamily: BD, fontSize: 12, color: '#9CA0A8', lineHeight: 1.6 }}>{lead.notes}</p>
+                                    </div>
+                                )}
+                                {lead.lastAction && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#FF7A29', boxShadow: '0 0 6px rgba(255,122,41,0.6)' }} />
+                                        <span style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.18em', color: '#5A5F69', textTransform: 'uppercase' }}>{lead.lastAction}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            </td>
+        </motion.tr>
+    );
+};
+
+// ─── STATUS PILL ─────────────────────────────────────────────────────────────
+const StatusPill: React.FC<{ status: string }> = ({ status }) => {
+    const cfg = STATUS[status] ?? STATUS.Archived;
+    return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 99, background: cfg.bg, border: `1px solid ${cfg.color}22` }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.color, boxShadow: `0 0 6px ${cfg.color}`, display: 'inline-block', animation: 'pulse 1.8s ease-in-out infinite' }} />
+            <span style={{ fontFamily: MN, fontSize: 9, fontWeight: 700, color: cfg.color, letterSpacing: '0.18em' }}>{status.toUpperCase()}</span>
         </span>
     );
 };
 
-const ScoreBar: React.FC<{ score: number }> = ({ score }) => {
-    const color = score > 80 ? '#FF7A29' : score > 50 ? '#FFA057' : '#6F6F72';
-    return (
-        <div className="flex items-center gap-2.5">
-            <div
-                className="rounded-full overflow-hidden"
-                style={{ width: 56, height: 4, background: 'rgba(255,255,255,0.07)' }}
-            >
-                <div
-                    className="h-full rounded-full"
-                    style={{
-                        width: `${score}%`,
-                        background: `linear-gradient(90deg, ${color}99, ${color})`,
-                        boxShadow: `0 0 6px ${color}55`,
-                    }}
-                />
-            </div>
-            <span style={{ fontSize: 10, fontFamily: 'JetBrains Mono, monospace', color: '#7A7F8A', minWidth: 20 }}>
-                {score}
-            </span>
-        </div>
-    );
-};
-
-const Avatar: React.FC<{ initials: string; bg: string }> = ({ initials, bg }) => (
-    <div
-        className="shrink-0 flex items-center justify-center rounded-full select-none"
-        style={{
-            width: 38, height: 38,
-            background: `linear-gradient(145deg, ${bg}ee, ${bg}cc)`,
-            border: '1px solid rgba(255,255,255,0.07)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.5)',
-            fontFamily: 'Orbitron, sans-serif',
-            fontSize: 10,
-            fontWeight: 700,
-            color: '#C8CAD0',
-            letterSpacing: '0.05em',
-        }}
-    >
-        {initials}
-    </div>
-);
-
-const PhBtn: React.FC<{
-    children: React.ReactNode;
-    primary?: boolean;
-    icon?: React.ElementType;
-    onClick?: () => void;
-}> = ({ children, primary, icon: Icon, onClick }) => (
-    <motion.button
-        whileHover={{ scale: 1.015 }}
-        whileTap={{ scale: 0.975 }}
-        onClick={onClick}
-        className="relative flex items-center gap-2 rounded-xl overflow-hidden cursor-pointer"
-        style={{
-            padding: '9px 20px',
-            fontFamily: 'Orbitron, sans-serif',
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            background: primary ? 'linear-gradient(145deg, #1C1E22, #131416)' : 'rgba(255,255,255,0.04)',
-            border: primary ? '1px solid rgba(255,122,41,0.45)' : '1px solid rgba(255,255,255,0.07)',
-            color: primary ? '#FF7A29' : '#7A7F8A',
-            boxShadow: primary ? '0 0 16px rgba(255,122,41,0.15), inset 0 1px 0 rgba(255,255,255,0.04)' : 'inset 0 1px 0 rgba(255,255,255,0.03)',
-        }}
-    >
-        <span className="absolute inset-x-0 top-0 h-px" style={{ background: primary ? 'rgba(255,122,41,0.4)' : 'rgba(255,255,255,0.05)' }} />
-        {Icon && <Icon size={13} />}
-        <span>{children}</span>
-    </motion.button>
-);
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+// ─── LEADS PAGE ──────────────────────────────────────────────────────────────
 export const Leads: React.FC = () => {
+    const [tab, setTab] = useState('All');
     const [search, setSearch] = useState('');
-    const [activeTab, setActiveTab] = useState('All');
+    const [showModal, setShowModal] = useState(false);
+    const [expanded, setExpanded] = useState<string | null>(null);
+    const [leads, setLeads] = useState<Lead[]>(LEADS);
 
-    const filtered = MOCK_LEADS.filter(lead => {
-        const matchSearch = lead.name.toLowerCase().includes(search.toLowerCase())
-            || lead.contact.toLowerCase().includes(search.toLowerCase());
-        const matchTab = activeTab === 'All' || lead.status === activeTab.toLowerCase();
-        return matchSearch && matchTab;
+    const filtered = leads.filter(l => {
+        if (tab !== 'All' && l.status !== tab) return false;
+        if (search && !l.name.toLowerCase().includes(search.toLowerCase()) && !l.company.toLowerCase().includes(search.toLowerCase())) return false;
+        return true;
     });
+    const counts = Object.keys(STATUS).reduce((acc, s) => ({ ...acc, [s]: leads.filter(l => l.status === s).length }), {} as Record<string, number>);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+            <AnimatePresence>{showModal && <AddLeadModal onClose={() => setShowModal(false)} onSave={l => setLeads(p => [l, ...p])} />}</AnimatePresence>
 
-            {/* ── Page Header ── */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
                 <div>
-                    <p
-                        style={{
-                            fontFamily: 'JetBrains Mono, monospace',
-                            fontSize: 9,
-                            letterSpacing: '0.3em',
-                            color: '#7A7F8A',
-                            marginBottom: 8,
-                            textTransform: 'uppercase',
-                        }}
-                    >
-                        // Intelligence Layer · {MOCK_LEADS.length} Targets Tracked
-                    </p>
-                    <h1
-                        style={{
-                            fontFamily: 'Orbitron, sans-serif',
-                            fontSize: 'clamp(28px, 4vw, 42px)',
-                            fontWeight: 900,
-                            color: '#FFFFFF',
-                            letterSpacing: '-0.02em',
-                            lineHeight: 1,
-                            margin: 0,
-                        }}
-                    >
-                        LEAD INTELLIGENCE
-                    </h1>
-                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7F8A', marginTop: 8 }}>
-                        Monitor and engage your highest-value acquisition targets.
-                    </p>
+                    <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.3em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 10 }}>// Intelligence Module · v2.1</p>
+                    <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1 }}>Lead Intelligence</h1>
                 </div>
-                <div className="flex items-center gap-3">
-                    <PhBtn icon={Download}>Export</PhBtn>
-                    <PhBtn primary icon={Plus}>Add Lead</PhBtn>
-                </div>
+                <motion.button whileHover={{ scale: 1.015, boxShadow: '0 0 24px rgba(255,122,41,0.28)' }} whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowModal(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 24px', borderRadius: 12, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', cursor: 'pointer', boxShadow: '0 0 16px rgba(255,122,41,0.14),inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+                    <Plus size={14} />ADD LEAD
+                </motion.button>
             </div>
 
-            {/* ── Control Bar (Tabs + Search) ── */}
-            <div
-                className="flex flex-col md:flex-row items-start md:items-center gap-5"
-                style={{
-                    background: 'linear-gradient(145deg, #181A1D 0%, #1E2023 100%)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: 14,
-                    padding: '14px 18px',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 20px rgba(0,0,0,0.4)',
-                }}
-            >
-                {/* Phoenix Tabs */}
-                <div className="flex items-center gap-1">
-                    {TABS.map(tab => {
-                        const isActive = tab === activeTab;
+            {/* Tabs + Search */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 0 }}>
+                    {TABS.map(t => {
+                        const active = t === tab;
                         return (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className="relative px-4 py-2 rounded-lg transition-colors duration-200"
-                                style={{
-                                    fontFamily: 'Orbitron, sans-serif',
-                                    fontSize: 9,
-                                    fontWeight: 700,
-                                    letterSpacing: '0.15em',
-                                    textTransform: 'uppercase',
-                                    color: isActive ? '#FFFFFF' : '#4A4F5A',
-                                    background: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    outline: 'none',
-                                }}
-                            >
-                                {isActive && (
+                            <motion.button key={t} onClick={() => setTab(t)} style={{ position: 'relative', padding: '8px 18px', background: 'none', border: 'none', color: active ? '#E2E4E9' : '#4A4F5A', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.18em', cursor: 'pointer', textTransform: 'uppercase' }}>
+                                {active && (
                                     <>
-                                        {/* Orange underline */}
-                                        <motion.span
-                                            layoutId="tab-underline"
-                                            className="absolute left-3 right-3 bottom-1 rounded-full"
-                                            style={{
-                                                height: 2,
-                                                background: 'linear-gradient(90deg, #D95B16, #FF7A29, #FFA057)',
-                                                boxShadow: '0 0 8px rgba(255,122,41,0.6)',
-                                            }}
-                                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                        />
-                                        {/* Micro LED dot */}
-                                        <span
-                                            className="absolute -top-0.5 right-2.5"
-                                            style={{
-                                                width: 4, height: 4,
-                                                borderRadius: '50%',
-                                                background: '#FF7A29',
-                                                boxShadow: '0 0 6px rgba(255,122,41,0.8)',
-                                            }}
-                                        />
+                                        <motion.div layoutId="tab-ul" style={{ position: 'absolute', bottom: -1, left: 12, right: 12, height: 2, borderRadius: 99, background: '#FF7A29', boxShadow: '0 0 8px rgba(255,122,41,0.7)' }} />
+                                        <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#FF7A29', position: 'absolute', top: 6, right: 8, boxShadow: '0 0 5px rgba(255,122,41,0.8)' }} />
                                     </>
                                 )}
-                                {tab}
-                            </button>
+                                {t}
+                            </motion.button>
                         );
                     })}
                 </div>
-
-                <div style={{ flex: 1 }} />
-
                 {/* Search */}
-                <div style={{ minWidth: 260 }}>
-                    <PhoenixInput
-                        icon={Search}
-                        type="text"
-                        placeholder="Search targets..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                    />
+                <div style={{ position: 'relative' }}>
+                    <Search size={13} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#FF7A29', pointerEvents: 'none' }} />
+                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search leads..."
+                        style={{ paddingLeft: 36, paddingRight: 16, paddingTop: 9, paddingBottom: 9, width: 240, borderRadius: 10, background: 'linear-gradient(145deg,#131416,#181A1D)', border: '1px solid rgba(255,255,255,0.07)', color: '#E2E4E9', fontFamily: BD, fontSize: 12, caretColor: '#FF7A29', outline: 'none', boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3)' }} />
                 </div>
             </div>
 
-            {/* ── Lead Cards ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {/* Column Headers */}
-                <div
-                    className="hidden md:grid"
-                    style={{
-                        gridTemplateColumns: '38px 1fr 1fr 120px 130px 90px 1fr 36px',
-                        gap: 12,
-                        padding: '0 20px',
-                        marginBottom: 4,
-                    }}
-                >
-                    {['', 'ENTITY', 'CONTACT', 'VALUE', 'STATUS', 'SCORE', 'LAST ACTION', ''].map((h, i) => (
-                        <span
-                            key={i}
-                            style={{
-                                fontFamily: 'JetBrains Mono, monospace',
-                                fontSize: 9,
-                                fontWeight: 700,
-                                letterSpacing: '0.2em',
-                                color: '#4A4F5A',
-                                textTransform: 'uppercase',
-                            }}
-                        >
-                            {h}
-                        </span>
-                    ))}
-                </div>
-
-                <AnimatePresence mode="popLayout">
-                    {filtered.map((lead, i) => (
-                        <motion.div
-                            key={lead.id}
-                            layout
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                            transition={{ duration: 0.28, delay: i * 0.04 }}
-                        >
-                            <div
-                                className="group relative"
-                                style={{
-                                    background: i % 2 === 0
-                                        ? 'linear-gradient(145deg, #181A1D 0%, #1E2023 100%)'
-                                        : 'linear-gradient(145deg, #1A1C1F 0%, #202327 100%)',
-                                    border: '1px solid rgba(255,255,255,0.05)',
-                                    borderRadius: 12,
-                                    padding: '14px 20px',
-                                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 10px rgba(0,0,0,0.35)',
-                                    cursor: 'pointer',
-                                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                                    display: 'grid',
-                                    gridTemplateColumns: '38px 1fr 1fr 120px 130px 90px 1fr 36px',
-                                    alignItems: 'center',
-                                    gap: 12,
-                                }}
-                                onMouseEnter={e => {
-                                    (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,122,41,0.18)';
-                                    (e.currentTarget as HTMLDivElement).style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 18px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,122,41,0.08)';
-                                }}
-                                onMouseLeave={e => {
-                                    (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.05)';
-                                    (e.currentTarget as HTMLDivElement).style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 10px rgba(0,0,0,0.35)';
-                                }}
-                            >
-                                {/* Top bevel edge */}
-                                <span
-                                    className="absolute inset-x-0 top-0 rounded-t-xl"
-                                    style={{ height: 1, background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }}
-                                />
-
-                                {/* Avatar */}
-                                <Avatar initials={lead.initials} bg={lead.avatarColor} />
-
-                                {/* Entity */}
-                                <div>
-                                    <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: 13, color: '#E2E4E9' }}>
-                                        {lead.name}
-                                    </div>
-                                    <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: '#4A4F5A', letterSpacing: '0.08em', marginTop: 2 }}>
-                                        {lead.id}
-                                    </div>
-                                </div>
-
-                                {/* Contact */}
-                                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#7A7F8A' }}>
-                                    {lead.contact}
-                                </div>
-
-                                {/* Value */}
-                                <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: 13, color: '#E2E4E9', letterSpacing: '0.01em' }}>
-                                    {lead.value}
-                                </div>
-
-                                {/* Status */}
-                                <StatusPill status={lead.status} />
-
-                                {/* Score */}
-                                <ScoreBar score={lead.score} />
-
-                                {/* Last Action */}
-                                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#5A5F69' }}>
-                                    {lead.lastAction}
-                                </div>
-
-                                {/* Actions */}
-                                <button
-                                    className="flex items-center justify-center rounded-lg transition-colors"
-                                    style={{
-                                        width: 30, height: 30,
-                                        background: 'rgba(255,255,255,0.03)',
-                                        border: '1px solid rgba(255,255,255,0.06)',
-                                        color: '#4A4F5A',
-                                        cursor: 'pointer',
-                                        outline: 'none',
-                                    }}
-                                    onMouseEnter={e => {
-                                        (e.currentTarget as HTMLButtonElement).style.color = '#E2E4E9';
-                                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,122,41,0.3)';
-                                    }}
-                                    onMouseLeave={e => {
-                                        (e.currentTarget as HTMLButtonElement).style.color = '#4A4F5A';
-                                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.06)';
-                                    }}
-                                >
-                                    <ChevronRight size={13} />
-                                </button>
-                            </div>
-                        </motion.div>
-                    ))}
+            {/* Table */}
+            <div style={{ borderRadius: 16, background: 'linear-gradient(145deg,#181A1D,#1E2022)', border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04),0 8px 32px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
+                <AnimatePresence mode="wait">
+                    <motion.table key={tab} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.2 }} style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                {['Lead', 'Company', 'Value', 'Score', 'Status', ''].map((h, i) => (
+                                    <th key={i} style={{ padding: i === 0 ? '14px 20px 14px 20px' : '14px 16px', textAlign: i === 5 ? 'right' : 'left', fontFamily: MN, fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', color: '#7A7F8A', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <AnimatePresence>
+                                {filtered.map((lead, i) => (
+                                    <React.Fragment key={lead.id}>
+                                        <motion.tr
+                                            initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
+                                            transition={{ delay: i * 0.04, duration: 0.3 }}
+                                            style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: i % 2 === 0 ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0.012)', cursor: 'pointer', transition: 'background 0.18s' }}
+                                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,122,41,0.04)')}
+                                            onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0.012)')}>
+                                            {/* Avatar + name */}
+                                            <td style={{ padding: '14px 20px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                                    <div style={{ width: 38, height: 38, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(145deg,#1E2023,#252830)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.4)' }}>
+                                                        <span style={{ fontFamily: H, fontSize: 11, fontWeight: 900, color: '#FF7A29' }}>{lead.initials}</span>
+                                                    </div>
+                                                    <div>
+                                                        <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: '#E2E4E9', marginBottom: 2 }}>{lead.name}</p>
+                                                        <p style={{ fontFamily: BD, fontSize: 11, color: '#5A5F69' }}>{lead.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '14px 16px' }}><span style={{ fontFamily: BD, fontSize: 12, color: '#9CA0A8' }}>{lead.company}</span></td>
+                                            <td style={{ padding: '14px 16px' }}><span style={{ fontFamily: BD, fontSize: 13, fontWeight: 700, color: '#E2E4E9' }}>{lead.value}</span></td>
+                                            <td style={{ padding: '14px 16px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <div style={{ flex: 1, height: 3, borderRadius: 99, background: 'rgba(255,255,255,0.07)', overflow: 'hidden', minWidth: 60 }}>
+                                                        <div style={{ height: '100%', width: `${lead.score}%`, borderRadius: 99, background: lead.score > 70 ? 'linear-gradient(90deg,#D95B16,#FF7A29)' : 'linear-gradient(90deg,#2A2D32,#7A7F8A)' }} />
+                                                    </div>
+                                                    <span style={{ fontFamily: BD, fontSize: 11, fontWeight: 700, color: lead.score > 70 ? '#FF7A29' : '#7A7F8A', minWidth: 28, textAlign: 'right' }}>{lead.score}</span>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '14px 16px' }}><StatusPill status={lead.status} /></td>
+                                            <td style={{ padding: '14px 20px', textAlign: 'right' }}>
+                                                <motion.button whileTap={{ scale: 0.88 }}
+                                                    onClick={() => setExpanded(expanded === lead.id ? null : lead.id)}
+                                                    style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#7A7F8A', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <motion.div animate={{ rotate: expanded === lead.id ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                                                        <ChevronRight size={14} />
+                                                    </motion.div>
+                                                </motion.button>
+                                            </td>
+                                        </motion.tr>
+                                        <AnimatePresence>{expanded === lead.id && <LeadDrawer lead={lead} />}</AnimatePresence>
+                                    </React.Fragment>
+                                ))}
+                            </AnimatePresence>
+                        </tbody>
+                    </motion.table>
                 </AnimatePresence>
-
-                {filtered.length === 0 && (
-                    <div
-                        className="flex flex-col items-center justify-center py-20 gap-3"
-                        style={{ color: '#4A4F5A' }}
-                    >
-                        <TrendingUp size={32} style={{ opacity: 0.4 }} />
-                        <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.2em' }}>
-                            NO TARGETS MATCH FILTER
-                        </p>
-                    </div>
-                )}
             </div>
 
-            {/* ── Footer Strip ── */}
-            <div
-                className="flex items-center justify-between"
-                style={{
-                    padding: '10px 20px',
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.04)',
-                    borderRadius: 10,
-                }}
-            >
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: '#4A4F5A', letterSpacing: '0.2em' }}>
-                    SHOWING {filtered.length} / {MOCK_LEADS.length} TARGETS
-                </span>
-                <div className="flex gap-2">
-                    {(['active', 'negotiating', 'new', 'archived'] as Status[]).map(s => {
-                        const count = MOCK_LEADS.filter(l => l.status === s).length;
-                        const cfg = STATUS_CONFIG[s];
-                        return (
-                            <span
-                                key={s}
-                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded"
-                                style={{
-                                    fontFamily: 'JetBrains Mono, monospace',
-                                    fontSize: 9,
-                                    color: cfg.color,
-                                    background: cfg.glow.replace('0.35', '0.06'),
-                                    letterSpacing: '0.1em',
-                                }}
-                            >
-                                <span className="rounded-full" style={{ width: 4, height: 4, background: cfg.dot }} />
-                                {count} {s.toUpperCase()}
-                            </span>
-                        );
-                    })}
-                </div>
+            {/* Footer legend */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, padding: '12px 20px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                {Object.entries(counts).map(([s, n]) => (
+                    <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: (STATUS[s]?.color || '#7A7F8A'), boxShadow: `0 0 6px ${STATUS[s]?.color || '#7A7F8A'}` }} />
+                        <span style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.18em', color: '#7A7F8A', textTransform: 'uppercase' }}>{s}: <strong style={{ color: '#D0D3DA' }}>{n}</strong></span>
+                    </div>
+                ))}
+                <div style={{ marginLeft: 'auto', fontFamily: MN, fontSize: 9, letterSpacing: '0.18em', color: '#4A4F5A' }}>TOTAL: {leads.length} LEADS</div>
             </div>
         </div>
     );

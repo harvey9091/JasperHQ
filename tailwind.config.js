@@ -29,7 +29,7 @@ module.exports = {
             },
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],
-                display: ['Orbitron', 'sans-serif'],
+                display: ['JetBrains Mono', 'monospace'],
                 mono: ['JetBrains Mono', 'monospace'],
             },
             backgroundImage: {

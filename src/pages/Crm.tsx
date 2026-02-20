@@ -60,8 +60,99 @@ const initialColumns: Column[] = [
     },
 ];
 
+const H = 'JetBrains Mono, monospace';
+const MN = 'JetBrains Mono, monospace';
+const BD = 'Inter, sans-serif';
+
+// ─── Modal Components ─────────────────────────────────────────────────────────
+
+const DealModal: React.FC<{
+    deal?: Task;
+    onClose: () => void;
+    onSave: (deal: Task) => void;
+}> = ({ deal, onClose, onSave }) => {
+    const [f, setF] = useState<Partial<Task>>(deal || { title: '', company: '', value: '', tag: 'Medium', date: 'Just now' });
+
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-xl p-6">
+            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }}
+                className="w-full max-w-xl bg-hero-stone border border-white/10 rounded-2xl shadow-panel-deep relative overflow-hidden">
+
+                {/* Accent glow */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-ember-primary/60 to-transparent" />
+
+                <div className="p-8">
+                    <div className="flex justify-between items-start mb-8">
+                        <div>
+                            <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-phoenix-muted mb-2">// {deal ? 'Edit Deal' : 'New Entry'}</p>
+                            <h2 style={{ fontFamily: H }} className="text-2xl font-bold text-white uppercase tracking-wider">{deal ? 'Deal Intelligence' : 'Register Deal'}</h2>
+                        </div>
+                        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg text-phoenix-muted transition-colors"><Plus className="rotate-45" size={20} /></button>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="font-mono text-[9px] uppercase tracking-widest text-phoenix-muted">Deal Title</label>
+                            <input value={f.title} onChange={e => setF({ ...f, title: e.target.value })}
+                                className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:border-ember-primary/40 transition-colors" placeholder="e.g. Enterprise Expansion" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="font-mono text-[9px] uppercase tracking-widest text-phoenix-muted">Company</label>
+                                <input value={f.company} onChange={e => setF({ ...f, company: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:border-ember-primary/40 transition-colors" placeholder="Acme Inc" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="font-mono text-[9px] uppercase tracking-widest text-phoenix-muted">Value</label>
+                                <input value={f.value} onChange={e => setF({ ...f, value: e.target.value })}
+                                    className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:border-ember-primary/40 transition-colors" placeholder="$0.00" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="font-mono text-[9px] uppercase tracking-widest text-phoenix-muted">Priority</label>
+                            <div className="flex gap-3">
+                                {(['High', 'Medium', 'Low'] as const).map(p => (
+                                    <button key={p} onClick={() => setF({ ...f, tag: p })}
+                                        className={clsx(
+                                            "flex-1 py-2 rounded-lg border text-[10px] uppercase font-bold tracking-widest transition-all",
+                                            f.tag === p ? "bg-ember-primary/10 border-ember-primary/50 text-ember-primary shadow-orange-sm" : "bg-white/5 border-white/5 text-phoenix-muted hover:bg-white/10"
+                                        )}>{p}</button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-10">
+                        <button onClick={() => { if (f.title && f.company) onSave({ ...(f as Task), id: deal?.id || `t${Date.now()}` }); }}
+                            style={{ fontFamily: H }}
+                            className="w-full py-4 bg-gradient-to-r from-ember-deep to-ember-primary rounded-xl text-white font-bold uppercase tracking-[0.2em] shadow-orange-glow hover:brightness-110 active:scale-[0.98] transition-all">
+                            {deal ? 'Update Pipeline' : 'Inject Deal'}
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
+
 export const Crm = () => {
     const [columns, setColumns] = useState<Column[]>(initialColumns);
+    const [selectedDeal, setSelectedDeal] = useState<{ deal?: Task; colId?: string } | null>(null);
+
+    const onSaveDeal = (deal: Task) => {
+        if (selectedDeal?.deal) {
+            // Edit
+            setColumns(cols => cols.map(c => ({
+                ...c,
+                tasks: c.tasks.map(t => t.id === deal.id ? deal : t)
+            })));
+        } else {
+            // New
+            setColumns(cols => cols.map((c, i) => i === 0 ? { ...c, tasks: [deal, ...c.tasks] } : c));
+        }
+        setSelectedDeal(null);
+    };
 
     const onDragEnd = (result: DropResult) => {
         const { source, destination } = result;
@@ -101,13 +192,17 @@ export const Crm = () => {
 
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col">
+            <AnimatePresence>
+                {selectedDeal && <DealModal deal={selectedDeal.deal} onClose={() => setSelectedDeal(null)} onSave={onSaveDeal} />}
+            </AnimatePresence>
+
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-3xl font-display font-bold text-white mb-1 tracking-tight">Deal Pipeline</h1>
-                    <p className="text-phoenix-muted font-light">Manage deal flow and progression.</p>
+                    <h1 className="text-3xl font-display font-bold text-white mb-2 uppercase tracking-wider">Deal Pipeline</h1>
+                    <p className="text-phoenix-muted font-mono text-[10px] uppercase tracking-widest">// Manage deal flow and progression auto-synced.</p>
                 </div>
-                <IndustrialButton icon={Plus}>New Deal</IndustrialButton>
+                <IndustrialButton icon={Plus} onClick={() => setSelectedDeal({})}>New Deal</IndustrialButton>
             </div>
 
             {/* Kanban Board */}
@@ -152,10 +247,18 @@ export const Crm = () => {
                                                             >
                                                                 <PhoenixCard
                                                                     className={clsx(
-                                                                        "p-4 cursor-grab active:cursor-grabbing hover:border-ember-primary/50 transition-colors group",
+                                                                        "p-5 cursor-grab active:cursor-grabbing hover:border-ember-primary/50 transition-colors group relative overflow-hidden",
                                                                         snapshot.isDragging && "shadow-orange-glow rotate-2 scale-105"
                                                                     )}
+                                                                    onClick={() => setSelectedDeal({ deal: task })}
                                                                 >
+                                                                    {/* Side accent */}
+                                                                    <div className={clsx(
+                                                                        "absolute left-0 top-0 bottom-0 w-1",
+                                                                        task.tag === 'High' ? "bg-ember-primary" :
+                                                                            task.tag === 'Medium' ? "bg-amber-500/60" :
+                                                                                "bg-phoenix-muted"
+                                                                    )} />
                                                                     {/* Tag & Menu */}
                                                                     <div className="flex justify-between items-start mb-3">
                                                                         <span className={clsx(

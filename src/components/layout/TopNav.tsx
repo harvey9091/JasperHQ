@@ -12,7 +12,7 @@ const NAV_ITEMS = [
     { name: 'CRM', path: '/crm' },
     { name: 'Agents', path: '/agents' },
     { name: 'Analytics', path: '/analytics' },
-    { name: 'Email Gen', path: '/email-gen' },
+    { name: 'Email Gen', path: '/email-generator' },
     { name: 'Settings', path: '/settings' },
 ];
 
@@ -34,7 +34,7 @@ export const TopNav: React.FC = () => (
             </div>
             <span
                 className="text-white font-bold text-[17px] tracking-wide select-none"
-                style={{ fontFamily: 'Orbitron, sans-serif', letterSpacing: '0.05em' }}
+                style={{ fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.05em' }}
             >
                 JASPER<span style={{ color: '#FF7A29' }}>HQ</span>
             </span>
@@ -53,7 +53,7 @@ export const TopNav: React.FC = () => (
                             isActive ? 'text-white' : 'text-[#7A7F8A] hover:text-[#C8CAD0]'
                         )
                     }
-                    style={{ fontFamily: 'Orbitron, sans-serif' }}
+                    style={{ fontFamily: 'JetBrains Mono, monospace' }}
                 >
                     {({ isActive }) => (
                         <>
@@ -103,7 +103,7 @@ export const TopNav: React.FC = () => (
                     border: '1px solid rgba(255,255,255,0.1)',
                 }}
             >
-                <span className="text-[11px] font-bold text-white" style={{ fontFamily: 'Orbitron, sans-serif' }}>HS</span>
+                <span className="text-[11px] font-bold text-white" style={{ fontFamily: 'JetBrains Mono, monospace' }}>HS</span>
             </div>
         </div>
     </header>
