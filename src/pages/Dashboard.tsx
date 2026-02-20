@@ -31,7 +31,7 @@ const MetricCard: React.FC<{ label: string; value: string; delta: string; up: bo
                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: up ? '#FF7A29' : '#2A2D32', boxShadow: up ? '0 0 7px rgba(255,122,41,0.7)' : undefined }} />
             </div>
         </div>
-        <h3 style={{ fontFamily: H, fontSize: 'clamp(28px,3vw,38px)', fontWeight: 800, color: '#FFF', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 10 }}>{value}</h3>
+        <h3 style={{ fontFamily: H, fontSize: 'clamp(28px,3vw,38px)', fontWeight: 900, color: '#FFF', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 10 }}>{value}</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ padding: '2px 8px', borderRadius: 6, fontFamily: BD, fontSize: 10, fontWeight: 700, background: up ? 'rgba(255,122,41,0.1)' : 'rgba(255,255,255,0.04)', color: up ? '#FF7A29' : '#7A7F8A', border: up ? '1px solid rgba(255,122,41,0.22)' : '1px solid rgba(255,255,255,0.06)' }}>{delta}</span>
             <span style={{ fontFamily: BD, fontSize: 11, color: '#5A5F69' }}>{label}</span>
@@ -77,7 +77,7 @@ export const Dashboard: React.FC = () => (
             <motion.div className="relative pb-14" style={{ zIndex: 2, maxWidth: 560 }}
                 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}>
                 <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.3em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 14 }}>// System Online · Alpha-1 · 85% Load</p>
-                <h1 style={{ fontFamily: H, fontSize: 'clamp(40px,5vw,60px)', fontWeight: 800, color: '#FFF', letterSpacing: '0.12em', lineHeight: 1, marginBottom: 18, whiteSpace: 'nowrap', textTransform: 'uppercase', textShadow: '0 2px 32px rgba(0,0,0,0.5)' }}>
+                <h1 style={{ fontFamily: H, fontSize: 'clamp(40px,5vw,60px)', fontWeight: 900, color: '#FFF', letterSpacing: '0.12em', lineHeight: 1, marginBottom: 18, whiteSpace: 'nowrap', textTransform: 'uppercase', textShadow: '0 2px 32px rgba(0,0,0,0.5)' }}>
                     WELCOME BACK
                 </h1>
                 <p style={{ fontFamily: BD, fontSize: 14, lineHeight: 1.65, color: '#9CA0A8', marginBottom: 28, maxWidth: 420 }}>
@@ -89,30 +89,30 @@ export const Dashboard: React.FC = () => (
                 </div>
             </motion.div>
 
-            {/* ARC — strictly bottom 38% */}
-            <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: '38%', zIndex: 1 }}>
-                <svg width="100%" height="100%" viewBox="0 0 1200 180" preserveAspectRatio="none">
+            {/* ARC — bottom 46%, lowered so it never overlaps buttons */}
+            <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: '46%', zIndex: 1 }}>
+                <svg width="100%" height="100%" viewBox="0 0 1300 200" preserveAspectRatio="none">
                     <defs>
                         <linearGradient id="ag1" x1="0" y1="0" x2="1" y2="0">
                             <stop offset="0%" stopColor="rgba(255,122,41,0)" />
-                            <stop offset="35%" stopColor="rgba(255,122,41,0.6)" />
-                            <stop offset="70%" stopColor="rgba(255,160,87,0.45)" />
-                            <stop offset="100%" stopColor="rgba(255,122,41,0)" />
+                            <stop offset="30%" stopColor="rgba(255,122,41,0.6)" />
+                            <stop offset="75%" stopColor="rgba(255,160,87,0.45)" />
+                            <stop offset="100%" stopColor="rgba(255,122,41,0.1)" />
                         </linearGradient>
                         <linearGradient id="ag2" x1="0" y1="0" x2="1" y2="0">
                             <stop offset="0%" stopColor="rgba(217,91,22,0)" />
                             <stop offset="50%" stopColor="rgba(217,91,22,0.4)" />
-                            <stop offset="100%" stopColor="rgba(217,91,22,0)" />
+                            <stop offset="100%" stopColor="rgba(217,91,22,0.08)" />
                         </linearGradient>
                         <filter id="af1"><feGaussianBlur stdDeviation="1.2" /></filter>
                     </defs>
-                    <motion.path d="M-50,160 C200,160 380,70 650,65 C920,60 1050,120 1250,140" fill="none" stroke="url(#ag1)" strokeWidth="2"
+                    <motion.path d="M-50,185 C200,185 400,110 680,105 C960,100 1100,148 1350,165" fill="none" stroke="url(#ag1)" strokeWidth="2"
                         initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1, x: [0, 5, 0] }}
                         transition={{ pathLength: { duration: 2.2, ease: [0.4, 0, 0.2, 1] }, opacity: { duration: 1 }, x: { duration: 9, repeat: Infinity, ease: 'easeInOut' } }} />
-                    <motion.path d="M-80,174 C250,174 430,95 700,90 C970,85 1080,138 1270,158" fill="none" stroke="url(#ag2)" strokeWidth="1" filter="url(#af1)"
+                    <motion.path d="M-80,193 C250,193 450,122 730,117 C1010,112 1130,155 1360,178" fill="none" stroke="url(#ag2)" strokeWidth="1" filter="url(#af1)"
                         initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 0.5 }}
                         transition={{ duration: 2.8, ease: 'easeOut', delay: 0.3 }} />
-                    <motion.path d="M-120,178 C180,178 360,108 620,103 C880,98 1000,148 1300,168" fill="none" stroke="url(#ag2)" strokeWidth="0.6"
+                    <motion.path d="M-120,198 C180,198 380,130 650,125 C920,120 1060,162 1360,188" fill="none" stroke="url(#ag2)" strokeWidth="0.6"
                         initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 0.28 }}
                         transition={{ duration: 3.4, ease: 'easeOut', delay: 0.6 }} />
                 </svg>

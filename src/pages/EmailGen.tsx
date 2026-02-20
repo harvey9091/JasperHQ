@@ -53,7 +53,7 @@ export const EmailGen: React.FC = () => {
             {/* Header */}
             <div>
                 <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.3em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 10 }}>// AI Outreach Module · GPT-4o</p>
-                <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1, marginBottom: 8 }}>Email Generator</h1>
+                <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 900, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1, marginBottom: 8 }}>Email Generator</h1>
                 <p style={{ fontFamily: BD, fontSize: 14, color: '#7A7F8A' }}>Generate personalised cold outreach using research insights.</p>
             </div>
 

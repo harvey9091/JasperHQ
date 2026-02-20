@@ -193,7 +193,7 @@ export const Agents: React.FC = () => (
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
                 <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.3em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 10 }}>// Autonomous Systems · {AGENTS.filter(a => a.status !== 'OFFLINE').length} Active</p>
-                <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1 }}>Agent Operations</h1>
+                <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 900, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1 }}>Agent Operations</h1>
                 <p style={{ fontFamily: BD, fontSize: 14, color: '#7A7F8A', marginTop: 8 }}>Monitor autonomous modules and cron jobs.</p>
             </div>
             <div style={{ display: 'flex', gap: 12 }}>

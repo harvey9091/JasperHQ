@@ -57,7 +57,7 @@ const AddLeadModal: React.FC<{ onClose: () => void; onSave: (l: Lead) => void }>
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)', padding: 24 }}>
+            style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)', padding: 24 }}>
             <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} transition={{ type: 'spring', stiffness: 320, damping: 28 }}
                 style={{ width: '100%', maxWidth: 760, maxHeight: '90vh', overflowY: 'auto', borderRadius: 20, background: 'linear-gradient(145deg,#181A1D,#1E2023)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: '0 0 60px rgba(255,122,41,0.12),0 32px 80px rgba(0,0,0,0.7)', position: 'relative' }}>
 
@@ -236,7 +236,7 @@ export const Leads: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
                 <div>
                     <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.3em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 10 }}>// Intelligence Module · v2.1</p>
-                    <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1 }}>Lead Intelligence</h1>
+                    <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 900, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1 }}>Lead Intelligence</h1>
                 </div>
                 <motion.button whileHover={{ scale: 1.015, boxShadow: '0 0 24px rgba(255,122,41,0.28)' }} whileTap={{ scale: 0.97 }}
                     onClick={() => setShowModal(true)}
@@ -273,65 +273,64 @@ export const Leads: React.FC = () => {
 
             {/* Table */}
             <div style={{ borderRadius: 16, background: 'linear-gradient(145deg,#181A1D,#1E2022)', border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04),0 8px 32px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
-                <AnimatePresence mode="wait">
-                    <motion.table key={tab} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: 0.2 }} style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                {['Lead', 'Company', 'Value', 'Score', 'Status', ''].map((h, i) => (
-                                    <th key={i} style={{ padding: i === 0 ? '14px 20px 14px 20px' : '14px 16px', textAlign: i === 5 ? 'right' : 'left', fontFamily: MN, fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', color: '#7A7F8A', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <AnimatePresence>
-                                {filtered.map((lead, i) => (
-                                    <React.Fragment key={lead.id}>
-                                        <motion.tr
-                                            initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
-                                            transition={{ delay: i * 0.04, duration: 0.3 }}
-                                            style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: i % 2 === 0 ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0.012)', cursor: 'pointer', transition: 'background 0.18s' }}
-                                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,122,41,0.04)')}
-                                            onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0.012)')}>
-                                            {/* Avatar + name */}
-                                            <td style={{ padding: '14px 20px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                                    <div style={{ width: 38, height: 38, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(145deg,#1E2023,#252830)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.4)' }}>
-                                                        <span style={{ fontFamily: H, fontSize: 11, fontWeight: 900, color: '#FF7A29' }}>{lead.initials}</span>
-                                                    </div>
-                                                    <div>
-                                                        <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: '#E2E4E9', marginBottom: 2 }}>{lead.name}</p>
-                                                        <p style={{ fontFamily: BD, fontSize: 11, color: '#5A5F69' }}>{lead.email}</p>
-                                                    </div>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            {['Lead', 'Company', 'Value', 'Score', 'Status', ''].map((h, i) => (
+                                <th key={i} style={{ padding: i === 0 ? '14px 20px 14px 20px' : '14px 16px', textAlign: i === 5 ? 'right' : 'left', fontFamily: MN, fontSize: 9, fontWeight: 700, letterSpacing: '0.22em', color: '#7A7F8A', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <AnimatePresence mode="popLayout" initial={false}>
+                            {filtered.map((lead, i) => (
+                                <React.Fragment key={lead.id}>
+                                    <motion.tr
+                                        layout
+                                        initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}
+                                        transition={{ duration: 0.22 }}
+                                        style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: i % 2 === 0 ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0.012)', cursor: 'pointer', transition: 'background 0.18s' }}
+                                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,122,41,0.04)')}
+                                        onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'rgba(255,255,255,0)' : 'rgba(255,255,255,0.012)')}>
+                                        {/* Avatar + name */}
+                                        <td style={{ padding: '14px 20px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                                <div style={{ width: 38, height: 38, borderRadius: '50%', flexShrink: 0, background: 'linear-gradient(145deg,#1E2023,#252830)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.4)' }}>
+                                                    <span style={{ fontFamily: H, fontSize: 11, fontWeight: 900, color: '#FF7A29' }}>{lead.initials}</span>
                                                 </div>
-                                            </td>
-                                            <td style={{ padding: '14px 16px' }}><span style={{ fontFamily: BD, fontSize: 12, color: '#9CA0A8' }}>{lead.company}</span></td>
-                                            <td style={{ padding: '14px 16px' }}><span style={{ fontFamily: BD, fontSize: 13, fontWeight: 700, color: '#E2E4E9' }}>{lead.value}</span></td>
-                                            <td style={{ padding: '14px 16px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <div style={{ flex: 1, height: 3, borderRadius: 99, background: 'rgba(255,255,255,0.07)', overflow: 'hidden', minWidth: 60 }}>
-                                                        <div style={{ height: '100%', width: `${lead.score}%`, borderRadius: 99, background: lead.score > 70 ? 'linear-gradient(90deg,#D95B16,#FF7A29)' : 'linear-gradient(90deg,#2A2D32,#7A7F8A)' }} />
-                                                    </div>
-                                                    <span style={{ fontFamily: BD, fontSize: 11, fontWeight: 700, color: lead.score > 70 ? '#FF7A29' : '#7A7F8A', minWidth: 28, textAlign: 'right' }}>{lead.score}</span>
+                                                <div>
+                                                    <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: '#E2E4E9', marginBottom: 2 }}>{lead.name}</p>
+                                                    <p style={{ fontFamily: BD, fontSize: 11, color: '#5A5F69' }}>{lead.email}</p>
                                                 </div>
-                                            </td>
-                                            <td style={{ padding: '14px 16px' }}><StatusPill status={lead.status} /></td>
-                                            <td style={{ padding: '14px 20px', textAlign: 'right' }}>
-                                                <motion.button whileTap={{ scale: 0.88 }}
-                                                    onClick={() => setExpanded(expanded === lead.id ? null : lead.id)}
-                                                    style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#7A7F8A', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <motion.div animate={{ rotate: expanded === lead.id ? 90 : 0 }} transition={{ duration: 0.2 }}>
-                                                        <ChevronRight size={14} />
-                                                    </motion.div>
-                                                </motion.button>
-                                            </td>
-                                        </motion.tr>
-                                        <AnimatePresence>{expanded === lead.id && <LeadDrawer lead={lead} />}</AnimatePresence>
-                                    </React.Fragment>
-                                ))}
-                            </AnimatePresence>
-                        </tbody>
-                    </motion.table>
-                </AnimatePresence>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '14px 16px' }}><span style={{ fontFamily: BD, fontSize: 12, color: '#9CA0A8' }}>{lead.company}</span></td>
+                                        <td style={{ padding: '14px 16px' }}><span style={{ fontFamily: BD, fontSize: 13, fontWeight: 700, color: '#E2E4E9' }}>{lead.value}</span></td>
+                                        <td style={{ padding: '14px 16px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <div style={{ flex: 1, height: 3, borderRadius: 99, background: 'rgba(255,255,255,0.07)', overflow: 'hidden', minWidth: 60 }}>
+                                                    <div style={{ height: '100%', width: `${lead.score}%`, borderRadius: 99, background: lead.score > 70 ? 'linear-gradient(90deg,#D95B16,#FF7A29)' : 'linear-gradient(90deg,#2A2D32,#7A7F8A)' }} />
+                                                </div>
+                                                <span style={{ fontFamily: BD, fontSize: 11, fontWeight: 700, color: lead.score > 70 ? '#FF7A29' : '#7A7F8A', minWidth: 28, textAlign: 'right' }}>{lead.score}</span>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '14px 16px' }}><StatusPill status={lead.status} /></td>
+                                        <td style={{ padding: '14px 20px', textAlign: 'right' }}>
+                                            <motion.button whileTap={{ scale: 0.88 }}
+                                                onClick={() => setExpanded(expanded === lead.id ? null : lead.id)}
+                                                style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: '#7A7F8A', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <motion.div animate={{ rotate: expanded === lead.id ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                                                    <ChevronRight size={14} />
+                                                </motion.div>
+                                            </motion.button>
+                                        </td>
+                                    </motion.tr>
+                                    <AnimatePresence>{expanded === lead.id && <LeadDrawer lead={lead} />}</AnimatePresence>
+                                </React.Fragment>
+                            ))}
+                        </AnimatePresence>
+                    </tbody>
+                </table>
             </div>
 
             {/* Footer legend */}

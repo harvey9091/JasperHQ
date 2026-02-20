@@ -64,7 +64,7 @@ export const Analytics: React.FC = () => (
         {/* Header */}
         <div>
             <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.3em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 10 }}>// Intelligence Suite · Real-time</p>
-            <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1, marginBottom: 8 }}>Analytics Suite</h1>
+            <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 900, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1, marginBottom: 8 }}>Analytics Suite</h1>
             <p style={{ fontFamily: BD, fontSize: 14, color: '#7A7F8A' }}>Performance, revenue, agents & pipeline intelligence.</p>
         </div>
 
@@ -142,7 +142,7 @@ export const Analytics: React.FC = () => (
         {/* Charts row 2: Radial + Heatmap */}
         <div className="grid grid-cols-1 lg:grid-cols-7 gap-5">
             {/* Radial agent efficiency */}
-            <Card className="lg:col-span-3" style={{ padding: 28 }}>
+            <Card className="lg:col-span-3" style={{ padding: 28, maxHeight: 300, overflow: 'hidden' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                     <Activity size={13} style={{ color: '#FF7A29' }} />
                     <span style={{ fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', color: '#FFF', textTransform: 'uppercase' }}>Agent Efficiency</span>
@@ -163,28 +163,30 @@ export const Analytics: React.FC = () => (
             </Card>
 
             {/* Activity heatmap */}
-            <Card className="lg:col-span-4" style={{ padding: 28, maxHeight: 340, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+            <Card className="lg:col-span-4" style={{ padding: 28, maxHeight: 300, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                     <Activity size={13} style={{ color: '#FF7A29' }} />
                     <span style={{ fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', color: '#FFF', textTransform: 'uppercase' }}>Activity Heatmap</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: `auto repeat(${HOURS.length},1fr)`, gap: 4 }}>
-                    <div />
-                    {HOURS.map(h => <span key={h} style={{ fontFamily: MN, fontSize: 8, color: '#5A5F69', textAlign: 'center' }}>{h}</span>)}
-                    {DAYS.map((d, di) => (
-                        <React.Fragment key={d}>
-                            <span style={{ fontFamily: MN, fontSize: 8, color: '#5A5F69', alignSelf: 'center', paddingRight: 6 }}>{d}</span>
-                            {heatData[di].map((v, hi) => (
-                                <motion.div key={hi} title={`${v}%`} initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: (di * 6 + hi) * 0.01 }}
-                                    style={{ aspectRatio: '1', borderRadius: 4, background: `rgba(255,122,41,${(v / 100) * 0.75 + 0.02})`, border: '1px solid rgba(255,122,41,0.06)' }} />
-                            ))}
-                        </React.Fragment>
-                    ))}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14 }}>
-                    <span style={{ fontFamily: MN, fontSize: 8, color: '#5A5F69' }}>Low</span>
-                    {[0.1, 0.2, 0.35, 0.5, 0.7, 0.9].map(o => <div key={o} style={{ flex: 1, height: 6, borderRadius: 2, background: `rgba(255,122,41,${o})` }} />)}
-                    <span style={{ fontFamily: MN, fontSize: 8, color: '#5A5F69' }}>High</span>
+                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: `auto repeat(${HOURS.length},1fr)`, gap: 3, flex: 1, overflow: 'hidden' }}>
+                        <div />
+                        {HOURS.map(h => <span key={h} style={{ fontFamily: MN, fontSize: 7, color: '#5A5F69', textAlign: 'center' }}>{h}</span>)}
+                        {DAYS.map((d, di) => (
+                            <React.Fragment key={d}>
+                                <span style={{ fontFamily: MN, fontSize: 7, color: '#5A5F69', alignSelf: 'center', paddingRight: 6 }}>{d}</span>
+                                {heatData[di].map((v, hi) => (
+                                    <motion.div key={hi} title={`${v}%`} initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: (di * 6 + hi) * 0.01 }}
+                                        style={{ aspectRatio: '1', borderRadius: 3, background: `rgba(255,122,41,${(v / 100) * 0.75 + 0.02})`, border: '1px solid rgba(255,122,41,0.06)' }} />
+                                ))}
+                            </React.Fragment>
+                        ))}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
+                        <span style={{ fontFamily: MN, fontSize: 7, color: '#5A5F69' }}>Low</span>
+                        {[0.1, 0.2, 0.35, 0.5, 0.7, 0.9].map(o => <div key={o} style={{ flex: 1, height: 5, borderRadius: 2, background: `rgba(255,122,41,${o})` }} />)}
+                        <span style={{ fontFamily: MN, fontSize: 7, color: '#5A5F69' }}>High</span>
+                    </div>
                 </div>
             </Card>
         </div>
