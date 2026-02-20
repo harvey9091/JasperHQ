@@ -20,10 +20,8 @@ export const TopNav: React.FC = () => (
     <header
         className="fixed top-0 left-0 right-0 z-50 h-[68px] flex items-center justify-between px-8"
         style={{
-            background: 'linear-gradient(180deg, #1E2024 0%, #181A1D 100%)',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            // Bottom bevel glow
-            boxShadow: 'inset 0 -1px 0 rgba(255,255,255,0.03), 0 4px 24px rgba(0,0,0,0.55)',
+            background: 'linear-gradient(180deg, #1C1E22 0%, #161820 60%, #131518 100%)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
         }}
     >
         {/* ── Logo ── */}
