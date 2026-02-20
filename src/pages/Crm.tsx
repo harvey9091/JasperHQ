@@ -325,7 +325,7 @@ export const Crm = () => {
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.3em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 10 }}>// Pipeline Manager · v2.1</p>
-                    <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 900, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1 }}>Deal Pipeline</h1>
+                    <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: '#FFF', letterSpacing: '-0.5px', textTransform: 'uppercase', lineHeight: 1 }}>Deal Pipeline</h1>
                 </div>
                 <IndustrialButton icon={Plus} onClick={() => setSelectedDeal({})}>New Deal</IndustrialButton>
             </div>
@@ -362,7 +362,7 @@ export const Crm = () => {
                                         >
                                             <div className="space-y-3">
                                                 {column.tasks.map((task, index) => (
-                                                    <Draggable draggableId={task.id} index={index} key={task.id}>
+                                                    <Draggable draggableId={task.id} index={index}>
                                                         {(provided, snapshot) => (
                                                             <div
                                                                 ref={provided.innerRef}

@@ -236,7 +236,7 @@ export const Leads: React.FC = () => {
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
                 <div>
                     <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.3em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 10 }}>// Intelligence Module · v2.1</p>
-                    <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 900, color: '#FFF', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1 }}>Lead Intelligence</h1>
+                    <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: '#FFF', letterSpacing: '-0.5px', textTransform: 'uppercase', lineHeight: 1 }}>Lead Intelligence</h1>
                 </div>
                 <motion.button whileHover={{ scale: 1.015, boxShadow: '0 0 24px rgba(255,122,41,0.28)' }} whileTap={{ scale: 0.97 }}
                     onClick={() => setShowModal(true)}

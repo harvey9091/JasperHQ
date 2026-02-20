@@ -31,7 +31,7 @@ const MetricCard: React.FC<{ label: string; value: string; delta: string; up: bo
                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: up ? '#FF7A29' : '#2A2D32', boxShadow: up ? '0 0 7px rgba(255,122,41,0.7)' : undefined }} />
             </div>
         </div>
-        <h3 style={{ fontFamily: H, fontSize: 'clamp(28px,3vw,38px)', fontWeight: 900, color: '#FFF', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 10 }}>{value}</h3>
+        <h3 style={{ fontFamily: H, fontSize: 'clamp(28px,3vw,38px)', fontWeight: 800, color: '#FFF', letterSpacing: '-0.5px', lineHeight: 1, marginBottom: 10 }}>{value}</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ padding: '2px 8px', borderRadius: 6, fontFamily: BD, fontSize: 10, fontWeight: 700, background: up ? 'rgba(255,122,41,0.1)' : 'rgba(255,255,255,0.04)', color: up ? '#FF7A29' : '#7A7F8A', border: up ? '1px solid rgba(255,122,41,0.22)' : '1px solid rgba(255,255,255,0.06)' }}>{delta}</span>
             <span style={{ fontFamily: BD, fontSize: 11, color: '#5A5F69' }}>{label}</span>
@@ -77,7 +77,7 @@ export const Dashboard: React.FC = () => (
             <motion.div className="relative pb-14" style={{ zIndex: 2, maxWidth: 560 }}
                 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}>
                 <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.3em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 14 }}>// System Online · Alpha-1 · 85% Load</p>
-                <h1 style={{ fontFamily: H, fontSize: 'clamp(40px,5vw,60px)', fontWeight: 900, color: '#FFF', letterSpacing: '0.12em', lineHeight: 1, marginBottom: 18, whiteSpace: 'nowrap', textTransform: 'uppercase', textShadow: '0 2px 32px rgba(0,0,0,0.5)' }}>
+                <h1 style={{ fontFamily: H, fontSize: 'clamp(40px,5vw,60px)', fontWeight: 800, color: '#FFF', letterSpacing: '-0.5px', lineHeight: 1, marginBottom: 18, whiteSpace: 'nowrap', textTransform: 'uppercase', textShadow: '0 2px 32px rgba(0,0,0,0.5)' }}>
                     WELCOME BACK
                 </h1>
                 <p style={{ fontFamily: BD, fontSize: 14, lineHeight: 1.65, color: '#9CA0A8', marginBottom: 28, maxWidth: 420 }}>
