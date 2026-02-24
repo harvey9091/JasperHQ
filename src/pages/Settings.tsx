@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Key, Database, Bell, Moon, Upload, Eye, EyeOff, ToggleLeft, ToggleRight, Download, Trash2, FileUp } from 'lucide-react';
+import { User, Key, Database, Bell, Moon, Upload, Eye, EyeOff, ToggleLeft, ToggleRight, Download, Trash2, FileUp, Save, Loader2, CheckCircle } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 const H = 'JetBrains Mono, monospace';
 const BD = 'Inter, sans-serif';
@@ -51,6 +52,31 @@ export const Settings: React.FC = () => {
     const [name, setName] = useState('Jasper Admin');
     const [email, setEmail] = useState('admin@jasperhq.io');
     const [phone, setPhone] = useState('+1 555 0000');
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+
+    // Load profile from Supabase settings table
+    useEffect(() => {
+        supabase.from('settings').select('value').eq('key', 'profile').eq('user_id', 'default')
+            .maybeSingle().then(({ data }) => {
+                if (data?.value) {
+                    const v = data.value as Record<string, string>;
+                    if (v.name) setName(v.name);
+                    if (v.email) setEmail(v.email);
+                    if (v.phone) setPhone(v.phone);
+                }
+            });
+    }, []);
+
+    const saveProfile = async () => {
+        setSaving(true); setSaved(false);
+        await supabase.from('settings').upsert(
+            { user_id: 'default', key: 'profile', value: { name, email, phone } },
+            { onConflict: 'user_id,key' }
+        );
+        setSaving(false); setSaved(true);
+        setTimeout(() => setSaved(false), 2200);
+    };
 
     const [animOn, setAnimOn] = useState(true);
     const [notifOn, setNotifOn] = useState(true);
@@ -91,8 +117,13 @@ export const Settings: React.FC = () => {
                         <FieldInput label="Full Name" value={name} onChange={setName} placeholder="Your Name" />
                         <FieldInput label="Email" value={email} onChange={setEmail} placeholder="you@example.com" type="email" />
                         <FieldInput label="Phone" value={phone} onChange={setPhone} placeholder="+1 555 0000" />
-                        <motion.button whileHover={{ scale: 1.01 }} style={{ padding: '12px', borderRadius: 12, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', cursor: 'pointer', boxShadow: '0 0 14px rgba(255,122,41,0.12)' }}>
-                            SAVE PROFILE
+                        <motion.button
+                            whileHover={{ scale: 1.01 }}
+                            onClick={saveProfile}
+                            disabled={saving}
+                            style={{ padding: '12px', borderRadius: 12, background: saved ? 'rgba(75,231,127,0.08)' : 'linear-gradient(145deg,#1E2024,#151719)', border: `1px solid ${saved ? 'rgba(75,231,127,0.48)' : 'rgba(255,122,41,0.48)'}`, color: saved ? '#4BE77F' : '#FF7A29', fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', cursor: saving ? 'wait' : 'pointer', boxShadow: '0 0 14px rgba(255,122,41,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'all 0.3s' }}>
+                            {saving ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : saved ? <CheckCircle size={12} /> : <Save size={12} />}
+                            {saving ? 'SAVING…' : saved ? 'SAVED!' : 'SAVE PROFILE'}
                         </motion.button>
                     </div>
                 </Card>

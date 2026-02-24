@@ -11,26 +11,29 @@ import { Settings } from './pages/Settings';
 import { Research } from './pages/Research';
 import { ResearchHub } from './pages/ResearchHub';
 import { Planner } from './pages/Planner';
+import { ToastProvider } from './components/ui/Toast';
 
 const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="research" element={<ResearchHub />} />
-          <Route path="research/:leadId" element={<Research />} />
-          <Route path="planner" element={<Planner />} />
-          <Route path="leads" element={<Leads />} />
-          <Route path="crm" element={<Crm />} />
-          <Route path="agents" element={<Agents />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="email-generator" element={<EmailGen />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="research" element={<ResearchHub />} />
+            <Route path="research/:leadId" element={<Research />} />
+            <Route path="planner" element={<Planner />} />
+            <Route path="leads" element={<Leads />} />
+            <Route path="crm" element={<Crm />} />
+            <Route path="agents" element={<Agents />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="email-generator" element={<EmailGen />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 };
 

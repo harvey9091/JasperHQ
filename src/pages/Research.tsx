@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileDown, CheckCircle2, Loader2, Microscope, Brain, Globe, Target, Shield, TrendingUp, AlertTriangle } from 'lucide-react';
-import { LEADS_DATA } from './Leads';
+import { supabase } from '../../lib/supabase';
+import type { Lead } from '../../lib/supabase';
 
 const H = 'JetBrains Mono, monospace';
 const BD = 'Inter, sans-serif';
@@ -150,13 +151,35 @@ const REPORT_SECTIONS = (name: string, company: string): ReportSection[] => [
 export const Research: React.FC = () => {
     const { leadId } = useParams<{ leadId: string }>();
     const navigate = useNavigate();
-    const lead = LEADS_DATA.find(l => l.id === leadId);
-
+    const [lead, setLead] = useState<Lead | null>(null);
+    const [realResearch, setRealResearch] = useState<any>(null);
     const [stage, setStage] = useState(0);
     const [done, setDone] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState(0);
     const [logs, setLogs] = useState<string[]>([]);
     const logRef = useRef<HTMLDivElement>(null);
+
+    // Fetch lead and research from Supabase by ID
+    useEffect(() => {
+        if (!leadId) return;
+        setLoading(true);
+        Promise.all([
+            supabase.from('leads').select('*').eq('id', leadId).maybeSingle(),
+            supabase.from('research').select('*').eq('lead_id', leadId).maybeSingle()
+        ]).then(([{ data: l }, { data: r }]) => {
+            setLead(l);
+            setRealResearch(r);
+            setLoading(false);
+
+            // If research already exists, skip animation and show it
+            if (r) {
+                setDone(true);
+                setProgress(100);
+                setLogs([`[${new Date().toLocaleTimeString()}] Analysis loaded from database.`, `  → Verified report found.`]);
+            }
+        });
+    }, [leadId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -199,7 +222,15 @@ export const Research: React.FC = () => {
 
     const name = lead?.name ?? `Lead ${leadId}`;
     const company = lead?.company ?? 'Unknown Company';
-    const report = REPORT_SECTIONS(name, company);
+
+    // Map real research to UI sections if available, else use placeholder logic
+    const report = realResearch
+        ? [
+            { icon: <Brain size={14} />, title: 'Executive Overview', body: realResearch.summary || 'Summary not available.' },
+            { icon: <Brain size={14} />, title: 'Deep Intelligence', body: realResearch.research_text || 'No detailed research text found.' },
+            { icon: <AlertTriangle size={14} />, title: 'Recommended Action', body: 'Strategic engagement recommended based on profile signals.' }
+        ]
+        : REPORT_SECTIONS(name, company);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>

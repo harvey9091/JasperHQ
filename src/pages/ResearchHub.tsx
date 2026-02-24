@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Microscope, Search, X, CheckCircle2, Clock, ArrowRight, FlaskConical, BarChart2, Brain, FileDown } from 'lucide-react';
-import { LEADS_DATA } from './Leads';
+import { Microscope, Search, X, CheckCircle2, Clock, ArrowRight, FlaskConical, BarChart2, Brain, FileDown, Loader2 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import type { Lead } from '../../lib/supabase';
+import { useToast } from '../components/ui/Toast';
 
 const H = 'JetBrains Mono, monospace';
 const BD = 'Inter, sans-serif';
@@ -12,30 +14,32 @@ const MN = 'JetBrains Mono, monospace';
 interface ResearchEntry {
     id: string; leadName: string; company: string; date: string;
     status: 'complete' | 'running' | 'queued';
-    score: number; insight: string;
+    score: number; insight: string; initials: string;
 }
-const RESEARCH_LOG: ResearchEntry[] = [
-    { id: 'L4', leadName: 'Priya Tewari', company: 'Quantum Ventures', date: '2h ago', status: 'complete', score: 91, insight: 'High buying intent — demo booked, fast-track outreach recommended.' },
-    { id: 'L1', leadName: 'Alex Khatri', company: 'Nexus Systems', date: '1d ago', status: 'complete', score: 88, insight: 'Enterprise integration alignment confirmed. Warm network path available.' },
-    { id: 'L2', leadName: 'Sofia Martinez', company: 'ArcLight Tech', date: '3d ago', status: 'complete', score: 72, insight: 'Proposal in review. Low churn risk, decision ETA ≈2 weeks.' },
-    { id: 'L3', leadName: 'James Okafor', company: 'Helix Analytics', date: '1w ago', status: 'queued', score: 55, insight: 'No reply detected. Re-engagement sequence recommended.' },
-    { id: 'L5', leadName: 'Calvin Osei', company: 'Orion Works', date: '3w ago', status: 'complete', score: 30, insight: 'Deal lost — budget constraints. Archive and deprioritise.' },
-];
-
+// ─── STATUS STYLE ─────────────────────────────────────────────────────────────
 const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
     complete: { label: 'COMPLETE', color: '#4BE77F', bg: 'rgba(75,231,127,0.08)' },
     running: { label: 'RUNNING', color: '#FF7A29', bg: 'rgba(255,122,41,0.08)' },
     queued: { label: 'QUEUED', color: '#7A9FFF', bg: 'rgba(122,159,255,0.08)' },
+    done: { label: 'COMPLETE', color: '#4BE77F', bg: 'rgba(75,231,127,0.08)' }, // support 'done' from DB
+    pending: { label: 'QUEUED', color: '#7A9FFF', bg: 'rgba(122,159,255,0.08)' }, // support 'pending' from DB
 };
 
 // ─── Lead Picker Modal ────────────────────────────────────────────────────────
 const LeadPickerModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const navigate = useNavigate();
     const [query, setQuery] = useState('');
+    const [allLeads, setAllLeads] = useState<Lead[]>([]);
+    const [loadingLeads, setLoadingLeads] = useState(true);
 
-    const filtered = LEADS_DATA.filter(l =>
-        l.name.toLowerCase().includes(query.toLowerCase()) ||
-        l.company.toLowerCase().includes(query.toLowerCase())
+    useEffect(() => {
+        supabase.from('leads').select('id,name,company,score,initials').order('name')
+            .then(({ data }) => { setAllLeads(data ?? []); setLoadingLeads(false); });
+    }, []);
+
+    const filtered = allLeads.filter(l =>
+        (l.name ?? '').toLowerCase().includes(query.toLowerCase()) ||
+        (l.company ?? '').toLowerCase().includes(query.toLowerCase())
     );
 
     // Close on ESC
@@ -80,7 +84,8 @@ const LeadPickerModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
                 {/* Lead list */}
                 <div style={{ padding: '0 14px 20px', display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 320, overflowY: 'auto' }}>
-                    {filtered.length === 0 && <p style={{ fontFamily: MN, fontSize: 10, color: '#4A4F5A', textAlign: 'center', padding: '20px 0', letterSpacing: '0.14em' }}>NO LEADS FOUND</p>}
+                    {loadingLeads && <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}><Loader2 size={16} style={{ color: '#3A3F4A', animation: 'spin 1s linear infinite' }} /></div>}
+                    {!loadingLeads && filtered.length === 0 && <p style={{ fontFamily: MN, fontSize: 10, color: '#4A4F5A', textAlign: 'center', padding: '20px 0', letterSpacing: '0.14em' }}>NO LEADS FOUND</p>}
                     {filtered.map(lead => (
                         <motion.button key={lead.id} whileHover={{ background: 'rgba(255,122,41,0.07)', borderColor: 'rgba(255,122,41,0.22)' }} whileTap={{ scale: 0.98 }}
                             onClick={() => go(lead.id)}
@@ -93,7 +98,7 @@ const LeadPickerModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 <p style={{ fontFamily: BD, fontSize: 11, color: '#6A6F7A', marginTop: 1 }}>{lead.company}</p>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ fontFamily: MN, fontSize: 9, color: lead.score >= 80 ? '#4BE77F' : lead.score >= 60 ? '#FF7A29' : '#6A6F7A', letterSpacing: '0.08em' }}>{lead.score}</span>
+                                <span style={{ fontFamily: MN, fontSize: 9, color: (lead.score ?? 0) >= 80 ? '#4BE77F' : (lead.score ?? 0) >= 60 ? '#FF7A29' : '#6A6F7A', letterSpacing: '0.08em' }}>{lead.score}</span>
                                 <ArrowRight size={12} style={{ color: '#4A4F5A' }} />
                             </div>
                         </motion.button>
@@ -107,14 +112,78 @@ const LeadPickerModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 // ─── RESEARCH HUB PAGE ─────────────────────────────────────────────────────────
 export const ResearchHub: React.FC = () => {
     const navigate = useNavigate();
+    const toast = useToast();
     const [modal, setModal] = useState(false);
+    const [log, setLog] = useState<ResearchEntry[]>([]);
+    const [stats, setStats] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const stats = [
-        { icon: <CheckCircle2 size={15} />, label: 'Analyses Complete', value: '4', color: '#4BE77F' },
-        { icon: <BarChart2 size={15} />, label: 'Avg Intent Score', value: '74', color: '#FF7A29' },
-        { icon: <Brain size={15} />, label: 'Queued Reports', value: '1', color: '#7A9FFF' },
-        { icon: <FileDown size={15} />, label: 'Reports Generated', value: '4', color: '#A78BFA' },
-    ];
+    const fetchData = async () => {
+        setLoading(true);
+        // 1. Fetch Stats
+        const { data: researchTasks } = await supabase.from('research_tasks').select('status');
+        const { data: leads } = await supabase.from('leads').select('score');
+
+        const completeCount = (researchTasks ?? []).filter(t => t.status === 'done' || t.status === 'complete').length;
+        const queuedCount = (researchTasks ?? []).filter(t => t.status === 'pending' || t.status === 'queued').length;
+        const avgScore = leads && leads.length > 0
+            ? Math.round(leads.reduce((acc, curr) => acc + (curr.score || 0), 0) / leads.length)
+            : 0;
+
+        setStats([
+            { icon: <CheckCircle2 size={15} />, label: 'Analyses Complete', value: String(completeCount), color: '#4BE77F' },
+            { icon: <BarChart2 size={15} />, label: 'Avg Intent Score', value: String(avgScore), color: '#FF7A29' },
+            { icon: <Brain size={15} />, label: 'Queued Reports', value: String(queuedCount), color: '#7A9FFF' },
+            { icon: <FileDown size={15} />, label: 'Reports Generated', value: String(completeCount), color: '#A78BFA' },
+        ]);
+
+        // 2. Fetch Recent Log (Join Research with Leads)
+        const { data: resLog } = await supabase
+            .from('research')
+            .select(`
+                id,
+                lead_id,
+                summary,
+                created_at,
+                leads:lead_id (
+                  name,
+                  company,
+                  score,
+                  initials
+                )
+            `)
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (resLog) {
+            setLog(resLog.map(r => ({
+                id: r.lead_id,
+                leadName: (r.leads as any)?.name ?? 'Unknown',
+                company: (r.leads as any)?.company ?? 'Private',
+                date: new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), // Format date
+                status: 'complete', // Assuming research entries are complete once in 'research' table
+                score: (r.leads as any)?.score ?? 0,
+                insight: r.summary,
+                initials: (r.leads as any)?.initials ?? '??'
+            })));
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchData();
+        // ─── Realtime: refresh when a research task finishes ──────────────────
+        const ch = supabase
+            .channel('research_tasks_hub_rt')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'research_tasks' },
+                () => { toast.success('Research operations updated'); fetchData(); }
+            )
+            .subscribe();
+        return () => { supabase.removeChannel(ch); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
@@ -134,7 +203,11 @@ export const ResearchHub: React.FC = () => {
 
             {/* Stats row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 14 }}>
-                {stats.map((s, i) => (
+                {loading ? [1, 2, 3, 4].map(i => (
+                    <div key={i} style={{ height: 110, borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Loader2 size={20} style={{ color: '#1E2022', animation: 'spin 2s linear infinite' }} />
+                    </div>
+                )) : stats.map((s, i) => (
                     <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06, duration: 0.35 }}
                         style={{ borderRadius: 16, padding: '18px 22px', background: 'linear-gradient(145deg,#181A1D,#1E2022)', border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -154,46 +227,56 @@ export const ResearchHub: React.FC = () => {
                     <p style={{ fontFamily: H, fontSize: 11, fontWeight: 700, color: '#E2E4E9', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Recent Research Log</p>
                     <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 99, background: 'rgba(255,122,41,0.07)', border: '1px solid rgba(255,122,41,0.18)' }}>
                         <Clock size={10} style={{ color: '#FF7A29' }} />
-                        <span style={{ fontFamily: MN, fontSize: 9, color: '#FF7A29', letterSpacing: '0.12em' }}>{RESEARCH_LOG.length} ENTRIES</span>
+                        <span style={{ fontFamily: MN, fontSize: 9, color: '#FF7A29', letterSpacing: '0.12em' }}>{log.length} ENTRIES</span>
                     </div>
                 </div>
 
                 <div style={{ padding: '12px 16px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <AnimatePresence initial={false}>
-                        {RESEARCH_LOG.map((entry, i) => {
-                            const ss = STATUS_STYLE[entry.status];
-                            return (
-                                <motion.div key={entry.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                                    style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'default' }}>
-                                    {/* Avatar */}
-                                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#2A2D32,#1E2024)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <span style={{ fontFamily: H, fontSize: 10, fontWeight: 700, color: '#FF7A29' }}>{entry.leadName.split(' ').map(n => n[0]).join('')}</span>
-                                    </div>
-                                    {/* Lead info */}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: '#E2E4E9' }}>{entry.leadName} <span style={{ color: '#6A6F7A', fontWeight: 400 }}>· {entry.company}</span></p>
-                                        <p style={{ fontFamily: BD, fontSize: 12, color: '#6A6F7A', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.insight}</p>
-                                    </div>
-                                    {/* Score */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 99, background: ss.bg, border: `1px solid ${ss.color}22` }}>
-                                            <span style={{ fontFamily: MN, fontSize: 9, color: ss.color, letterSpacing: '0.12em' }}>{ss.label}</span>
+                    {loading ? (
+                        <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                            <Loader2 size={24} style={{ color: '#FF7A29', animation: 'spin 1.2s linear infinite' }} />
+                        </div>
+                    ) : log.length === 0 ? (
+                        <div style={{ padding: '60px 0', textAlign: 'center' }}>
+                            <p style={{ fontFamily: MN, fontSize: 10, color: '#4A4F5A', letterSpacing: '0.15em' }}>NO RESEARCH HISTORY FOUND</p>
+                        </div>
+                    ) : (
+                        <AnimatePresence initial={false}>
+                            {log.map((entry, i) => {
+                                const ss = STATUS_STYLE[entry.status] || STATUS_STYLE.complete;
+                                return (
+                                    <motion.div key={entry.id + i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                                        style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'default' }}>
+                                        {/* Avatar */}
+                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#2A2D32,#1E2024)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <span style={{ fontFamily: H, fontSize: 10, fontWeight: 700, color: '#FF7A29' }}>{entry.initials}</span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <span style={{ fontFamily: MN, fontSize: 9, color: '#4A4F5A', letterSpacing: '0.1em' }}>{entry.date}</span>
-                                            <span style={{ fontFamily: H, fontSize: 11, fontWeight: 700, color: entry.score >= 80 ? '#4BE77F' : entry.score >= 60 ? '#FF7A29' : '#6A6F7A' }}>{entry.score}</span>
+                                        {/* Lead info */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: '#E2E4E9' }}>{entry.leadName} <span style={{ color: '#6A6F7A', fontWeight: 400 }}>· {entry.company}</span></p>
+                                            <p style={{ fontFamily: BD, fontSize: 12, color: '#6A6F7A', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.insight || 'Deep intelligence report generated.'}</p>
                                         </div>
-                                    </div>
-                                    {/* View button */}
-                                    <motion.button whileHover={{ borderColor: 'rgba(255,122,41,0.45)', color: '#FF7A29' }} whileTap={{ scale: 0.93 }}
-                                        onClick={() => navigate(`/research/${entry.id}`)}
-                                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', color: '#7A7F8A', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', flexShrink: 0, transition: 'all 0.18s' }}>
-                                        VIEW <ArrowRight size={10} />
-                                    </motion.button>
-                                </motion.div>
-                            );
-                        })}
-                    </AnimatePresence>
+                                        {/* Score */}
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 99, background: ss.bg, border: `1px solid ${ss.color}22` }}>
+                                                <span style={{ fontFamily: MN, fontSize: 9, color: ss.color, letterSpacing: '0.12em' }}>{ss.label}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontFamily: MN, fontSize: 9, color: '#4A4F5A', letterSpacing: '0.1em' }}>{entry.date}</span>
+                                                <span style={{ fontFamily: H, fontSize: 11, fontWeight: 700, color: entry.score >= 80 ? '#4BE77F' : entry.score >= 60 ? '#FF7A29' : '#6A6F7A' }}>{entry.score}</span>
+                                            </div>
+                                        </div>
+                                        {/* View button */}
+                                        <motion.button whileHover={{ borderColor: 'rgba(255,122,41,0.45)', color: '#FF7A29' }} whileTap={{ scale: 0.93 }}
+                                            onClick={() => navigate(`/research/${entry.id}`)}
+                                            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', color: '#7A7F8A', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', flexShrink: 0, transition: 'all 0.18s' }}>
+                                            VIEW <ArrowRight size={10} />
+                                        </motion.button>
+                                    </motion.div>
+                                );
+                            })}
+                        </AnimatePresence>
+                    )}
                 </div>
             </div>
 

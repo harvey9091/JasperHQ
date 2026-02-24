@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, Mail, Database, BookOpen, Cpu, Target, Dumbbell, RefreshCw, MessageSquare, Clock, X, Check, ChevronRight, Zap } from 'lucide-react';
+import { Video, Mail, Database, BookOpen, Cpu, Target, Dumbbell, RefreshCw, MessageSquare, Clock, X, Check, ChevronRight, Zap, Loader2 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 const H = 'JetBrains Mono, monospace';
 const BD = 'Inter, sans-serif';
@@ -116,7 +117,73 @@ export const Planner: React.FC = () => {
     const [focus, setFocus] = useState<Focus>('editing');
     const [modal, setModal] = useState(false);
     const [toast, setToast] = useState(false);
-    const plan = FOCUS_PLANS[focus];
+    const [livePlan, setLivePlan] = useState<TimeBlock[] | null>(null);
+    const [liveCrons, setLiveCrons] = useState<typeof CRON_TRIGGERS | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const fetchTasks = useCallback(async (currentFocus: Focus) => {
+        setLoading(true);
+        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+        // Try to fetch by date + focus
+        const { data: byDateFocus } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('focus', currentFocus)
+            .eq('date', today)
+            .order('time', { ascending: true });
+
+        // Fallback: fetch by focus only (any date)
+        const { data: byFocus } = byDateFocus && byDateFocus.length > 0
+            ? { data: byDateFocus }
+            : await supabase.from('tasks').select('*').eq('focus', currentFocus).order('time', { ascending: true });
+
+        if (byFocus && byFocus.length > 0) {
+            const iconMap: Record<string, React.ReactNode> = {
+                video: <Video size={14} />, mail: <Mail size={14} />, database: <Database size={14} />,
+                book: <BookOpen size={14} />, cpu: <Cpu size={14} />, target: <Target size={14} />,
+                dumbbell: <Dumbbell size={14} />, message: <MessageSquare size={14} />,
+            };
+            const blocks: TimeBlock[] = byFocus.map((t: { time: string; label: string; description?: string | null; type?: string | null; color?: string | null; tag?: string | null }) => ({
+                time: t.time ?? '–',
+                label: t.label ?? 'Task',
+                description: t.description ?? '',
+                icon: iconMap[t.type ?? ''] ?? <Target size={14} />,
+                color: t.color ?? '#FF7A29',
+                tag: t.tag ?? 'TASK',
+            }));
+            setLivePlan(blocks);
+        } else {
+            setLivePlan(null); // triggers static fallback
+        }
+
+        // Fetch upcoming crons from monitor_logs
+        const { data: cronData } = await supabase
+            .from('monitor_logs')
+            .select('agent, schedule, next_run, status')
+            .not('schedule', 'is', null)
+            .order('next_run', { ascending: true })
+            .limit(4);
+
+        if (cronData && cronData.length > 0) {
+            const CRON_COLORS = ['#FF7A29', '#4BE77F', '#7A9FFF', '#A78BFA'];
+            setLiveCrons(cronData.map((r: { agent?: string | null; schedule?: string | null; next_run?: string | null }, i: number) => ({
+                name: `${r.agent ?? '–'} Job`,
+                next: r.next_run ? new Date(r.next_run).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '–',
+                agent: r.agent ?? '–',
+                color: CRON_COLORS[i % CRON_COLORS.length],
+            })));
+        } else {
+            setLiveCrons(null); // triggers static fallback
+        }
+
+        setLoading(false);
+    }, []);
+
+    useEffect(() => { fetchTasks(focus); }, [focus, fetchTasks]);
+
+    const plan = livePlan ?? FOCUS_PLANS[focus];
+    const crons = liveCrons ?? CRON_TRIGGERS;
     const focusMeta = FOCUS_OPTIONS.find(f => f.key === focus)!;
 
     const sendDiscord = () => {
@@ -167,30 +234,37 @@ export const Planner: React.FC = () => {
                         {/* Vertical line */}
                         <div style={{ position: 'absolute', left: 56, top: 16, bottom: 24, width: 1, background: 'linear-gradient(180deg,rgba(255,122,41,0.3),rgba(255,122,41,0.05))' }} />
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <AnimatePresence mode="wait">
-                                {plan.map((block, i) => (
-                                    <motion.div key={`${focus}-${i}`}
-                                        initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
-                                        transition={{ delay: i * 0.07, duration: 0.35 }}
-                                        style={{ display: 'flex', gap: 16, alignItems: 'flex-start', padding: '14px 0' }}>
-                                        {/* Time */}
-                                        <p style={{ fontFamily: MN, fontSize: 10, color: '#4A4F5A', letterSpacing: '0.08em', flexShrink: 0, width: 36, paddingTop: 2 }}>{block.time}</p>
-                                        {/* Node dot */}
-                                        <div style={{ flexShrink: 0, marginTop: 4, position: 'relative', zIndex: 1 }}>
-                                            <div style={{ width: 12, height: 12, borderRadius: '50%', background: block.color, boxShadow: `0 0 10px ${block.color}88` }} />
-                                        </div>
-                                        {/* Content */}
-                                        <div style={{ flex: 1, borderRadius: 14, padding: '12px 16px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)', marginLeft: 4 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                                                <div style={{ color: block.color }}>{block.icon}</div>
-                                                <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: '#E2E4E9' }}>{block.label}</p>
-                                                <span style={{ marginLeft: 'auto', fontFamily: MN, fontSize: 8, letterSpacing: '0.14em', color: block.color, padding: '3px 8px', borderRadius: 99, background: `${block.color}10`, border: `1px solid ${block.color}28` }}>{block.tag}</span>
+                            {loading ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '18px 0' }}>
+                                    <Loader2 size={16} style={{ color: '#FF7A29', animation: 'spin 1s linear infinite' }} />
+                                    <span style={{ fontFamily: MN, fontSize: 10, color: '#3A3F4A', letterSpacing: '0.14em' }}>LOADING SCHEDULE…</span>
+                                </div>
+                            ) : (
+                                <AnimatePresence mode="wait">
+                                    {plan.map((block, i) => (
+                                        <motion.div key={`${focus}-${i}`}
+                                            initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
+                                            transition={{ delay: i * 0.07, duration: 0.35 }}
+                                            style={{ display: 'flex', gap: 16, alignItems: 'flex-start', padding: '14px 0' }}>
+                                            {/* Time */}
+                                            <p style={{ fontFamily: MN, fontSize: 10, color: '#4A4F5A', letterSpacing: '0.08em', flexShrink: 0, width: 36, paddingTop: 2 }}>{block.time}</p>
+                                            {/* Node dot */}
+                                            <div style={{ flexShrink: 0, marginTop: 4, position: 'relative', zIndex: 1 }}>
+                                                <div style={{ width: 12, height: 12, borderRadius: '50%', background: block.color, boxShadow: `0 0 10px ${block.color}88` }} />
                                             </div>
-                                            <p style={{ fontFamily: BD, fontSize: 12, color: '#6A6F7A', lineHeight: 1.65 }}>{block.description}</p>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
+                                            {/* Content */}
+                                            <div style={{ flex: 1, borderRadius: 14, padding: '12px 16px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)', marginLeft: 4 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                                                    <div style={{ color: block.color }}>{block.icon}</div>
+                                                    <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: '#E2E4E9' }}>{block.label}</p>
+                                                    <span style={{ marginLeft: 'auto', fontFamily: MN, fontSize: 8, letterSpacing: '0.14em', color: block.color, padding: '3px 8px', borderRadius: 99, background: `${block.color}10`, border: `1px solid ${block.color}28` }}>{block.tag}</span>
+                                                </div>
+                                                <p style={{ fontFamily: BD, fontSize: 12, color: '#6A6F7A', lineHeight: 1.65 }}>{block.description}</p>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -204,7 +278,7 @@ export const Planner: React.FC = () => {
                             <p style={{ fontFamily: H, fontSize: 10, fontWeight: 700, color: '#E2E4E9', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Upcoming Crons</p>
                         </div>
                         <div style={{ padding: '10px 14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {CRON_TRIGGERS.map((c, i) => (
+                            {crons.map((c, i) => (
                                 <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
                                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     <div style={{ width: 7, height: 7, borderRadius: '50%', background: c.color, boxShadow: `0 0 6px ${c.color}88`, flexShrink: 0 }} />
