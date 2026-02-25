@@ -20,14 +20,14 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
-            <Route path="research" element={<ResearchHub />} />
-            <Route path="research/:leadId" element={<Research />} />
             <Route path="planner" element={<Planner />} />
             <Route path="leads" element={<Leads />} />
+            <Route path="research" element={<ResearchHub />} />
+            <Route path="research/:leadId" element={<Research />} />
             <Route path="crm" element={<Crm />} />
+            <Route path="email-generator" element={<EmailGen />} />
             <Route path="agents" element={<Agents />} />
             <Route path="analytics" element={<Analytics />} />
-            <Route path="email-generator" element={<EmailGen />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

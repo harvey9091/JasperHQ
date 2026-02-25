@@ -120,6 +120,8 @@ export const Planner: React.FC = () => {
     const [livePlan, setLivePlan] = useState<TimeBlock[] | null>(null);
     const [liveCrons, setLiveCrons] = useState<typeof CRON_TRIGGERS | null>(null);
     const [loading, setLoading] = useState(false);
+    const [prompt, setPrompt] = useState('');
+    const [generating, setGenerating] = useState(false);
 
     const fetchTasks = useCallback(async (currentFocus: Focus) => {
         setLoading(true);
@@ -182,8 +184,27 @@ export const Planner: React.FC = () => {
 
     useEffect(() => { fetchTasks(focus); }, [focus, fetchTasks]);
 
-    const plan = livePlan ?? FOCUS_PLANS[focus];
-    const crons = liveCrons ?? CRON_TRIGGERS;
+    const handleGenerate = async () => {
+        if (!prompt) return;
+        setGenerating(true);
+        try {
+            await fetch('http://localhost:3001/agent/planner', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+            });
+            // After triggering, we might want to wait or just rely on realtime if implemented.
+            // But let's just refresh tasks after a delay or assuming it's quick.
+            setTimeout(() => fetchTasks(focus), 2000);
+        } catch (err) {
+            console.error('Planner fail:', err);
+        } finally {
+            setGenerating(false);
+        }
+    };
+
+    const plan = livePlan ?? [];
+    const crons = liveCrons ?? [];
     const focusMeta = FOCUS_OPTIONS.find(f => f.key === focus)!;
 
     const sendDiscord = () => {
@@ -201,15 +222,20 @@ export const Planner: React.FC = () => {
                     <p style={{ fontFamily: BD, fontSize: 14, color: '#7A7F8A', marginTop: 8 }}>Your structured workflow for today.</p>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
-                    <motion.button whileHover={{ borderColor: 'rgba(122,159,255,0.45)', color: '#7A9FFF' }} whileTap={{ scale: 0.97 }}
-                        onClick={sendDiscord}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#7A7F8A', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: 'pointer', transition: 'all 0.18s' }}>
-                        <MessageSquare size={12} />SEND TO DISCORD
-                    </motion.button>
+                    <div style={{ position: 'relative', width: 340 }}>
+                        <input
+                            value={prompt}
+                            onChange={e => setPrompt(e.target.value)}
+                            placeholder="Describe your day and I'll generate a schedule"
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#E2E4E9', fontFamily: BD, fontSize: 12, outline: 'none' }}
+                        />
+                    </div>
                     <motion.button whileHover={{ boxShadow: '0 0 22px rgba(255,122,41,0.28)', borderColor: 'rgba(255,122,41,0.65)' }} whileTap={{ scale: 0.97 }}
-                        onClick={() => setModal(true)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: 'pointer', boxShadow: '0 0 12px rgba(255,122,41,0.1)' }}>
-                        <RefreshCw size={12} />REGENERATE PLAN
+                        onClick={handleGenerate}
+                        disabled={generating || !prompt}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: (generating || !prompt) ? 'default' : 'pointer', boxShadow: '0 0 12px rgba(255,122,41,0.1)', opacity: generating ? 0.6 : 1 }}>
+                        {generating ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={12} />}
+                        GENERATE PLAN
                     </motion.button>
                 </div>
             </div>

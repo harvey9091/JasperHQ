@@ -7,13 +7,13 @@ import clsx from 'clsx';
 // ── JasperHQ Navigation Items ─────────────────────────────────────────────────
 const NAV_ITEMS = [
     { name: 'Dashboard', path: '/' },
-    { name: 'Research', path: '/research' },
     { name: 'Planner', path: '/planner' },
     { name: 'Leads', path: '/leads' },
+    { name: 'Research', path: '/research' },
     { name: 'CRM', path: '/crm' },
+    { name: 'Email Gen', path: '/email-generator' },
     { name: 'Agents', path: '/agents' },
     { name: 'Analytics', path: '/analytics' },
-    { name: 'Email Gen', path: '/email-generator' },
     { name: 'Settings', path: '/settings' },
 ];
 

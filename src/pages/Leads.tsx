@@ -131,8 +131,8 @@ const emptyForm = (): Omit<Lead, 'id' | 'created_at'> => ({
     last_action: '',
 });
 
-const AddLeadModal: React.FC<{ onClose: () => void; onSaved: () => void }> = ({ onClose, onSaved }) => {
-    const [f, setF] = useState(emptyForm());
+const AddLeadModal: React.FC<{ onClose: () => void; onSaved: () => void; lead?: Lead }> = ({ onClose, onSaved, lead }) => {
+    const [f, setF] = useState(lead ? { ...lead } : emptyForm());
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState('');
     const set = (k: keyof typeof f, v: string | number) => setF(p => ({ ...p, [k]: v }));
@@ -142,8 +142,17 @@ const AddLeadModal: React.FC<{ onClose: () => void; onSaved: () => void }> = ({ 
         setSaving(true);
         setErr('');
         const initials = f.name.split(' ').map(w => w[0] || '').join('').slice(0, 2).toUpperCase() || '??';
-        const last_action = 'Added just now';
-        const { error } = await supabase.from('leads').insert([{ ...f, initials, last_action }]);
+        const last_action = lead ? lead.last_action : 'Added just now';
+
+        let error;
+        if (lead) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { id, created_at, ...updateData } = f as any;
+            ({ error } = await supabase.from('leads').update({ ...updateData, initials }).eq('id', lead.id));
+        } else {
+            ({ error } = await supabase.from('leads').insert([{ ...f, initials, last_action }]));
+        }
+
         setSaving(false);
         if (error) { setErr(error.message); return; }
         onSaved();
@@ -247,7 +256,9 @@ export const Leads: React.FC = () => {
     const [showDFY, setShowDFY] = useState(false);
     const [showAPV, setShowAPV] = useState(false);
     const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
+    const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [editingLead, setEditingLead] = useState<Lead | null>(null);
 
     const fetchLeads = useCallback(async () => {
         setLoading(true);
@@ -292,13 +303,37 @@ export const Leads: React.FC = () => {
     const handleDFY = async (leadId: string) => {
         setActiveLeadId(leadId);
         setShowDFY(true);
-        await triggerDFY({ leadId });
+        try {
+            await fetch('http://localhost:3001/agent/dfy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ leadId })
+            });
+        } catch (err) {
+            console.error('DFY fail:', err);
+        }
     };
 
     const handleAPV = async (leadId: string) => {
         setActiveLeadId(leadId);
         setShowAPV(true);
-        await triggerAPV({ leadId });
+        try {
+            await fetch('http://localhost:3001/agent/apv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ leadId })
+            });
+        } catch (err) {
+            console.error('APV fail:', err);
+        }
+    };
+
+    const handleDelete = async (leadId: string) => {
+        if (!confirm('Are you sure you want to delete this lead?')) return;
+        const { error } = await supabase.from('leads').delete().eq('id', leadId);
+        if (error) { toast.error(error.message); return; }
+        toast.success('Lead deleted');
+        fetchLeads();
     };
 
     const STATUSES = ['All', 'Active', 'Negotiating', 'New', 'Archived'];
@@ -324,6 +359,18 @@ export const Leads: React.FC = () => {
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
+                    <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => selectedLeadId && handleDFY(selectedLeadId)}
+                        disabled={!selectedLeadId}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'rgba(255,122,41,0.03)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: selectedLeadId ? 'pointer' : 'not-allowed', opacity: selectedLeadId ? 1 : 0.4 }}>
+                        <Zap size={12} />DFY
+                    </motion.button>
+                    <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => selectedLeadId && handleAPV(selectedLeadId)}
+                        disabled={!selectedLeadId}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'rgba(122,159,255,0.03)', border: '1px solid rgba(122,159,255,0.35)', color: '#7A9FFF', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: selectedLeadId ? 'pointer' : 'not-allowed', opacity: selectedLeadId ? 1 : 0.4 }}>
+                        <FlaskConical size={12} />APV
+                    </motion.button>
                     <motion.button whileHover={{ scale: 1.015, boxShadow: '0 0 22px rgba(255,122,41,0.22)' }} whileTap={{ scale: 0.97 }}
                         onClick={() => setShowAdd(true)}
                         style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: 'pointer', boxShadow: '0 0 12px rgba(255,122,41,0.1)' }}>
@@ -374,11 +421,14 @@ export const Leads: React.FC = () => {
                             {loading ? <LoadingRow /> : filtered.length === 0 ? <EmptyRow /> : filtered.map((lead, i) => (
                                 <React.Fragment key={lead.id}>
                                     <motion.tr initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                                        onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}
-                                        style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', background: expandedId === lead.id ? 'rgba(255,122,41,0.03)' : 'transparent', transition: 'background 0.2s' }}>
+                                        onClick={() => {
+                                            setExpandedId(expandedId === lead.id ? null : lead.id);
+                                            setSelectedLeadId(lead.id);
+                                        }}
+                                        style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer', background: selectedLeadId === lead.id ? 'rgba(255,122,41,0.06)' : 'transparent', transition: 'background 0.2s' }}>
                                         <td style={{ padding: '14px 16px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(145deg,#252830,#1E2023)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <div style={{ width: 34, height: 34, borderRadius: '50%', background: selectedLeadId === lead.id ? 'rgba(255,122,41,0.15)' : 'linear-gradient(145deg,#252830,#1E2023)', border: selectedLeadId === lead.id ? '1px solid #FF7A29' : '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                                     <span style={{ fontFamily: H, fontSize: 11, fontWeight: 800, color: '#FF7A29' }}>{lead.initials || '??'}</span>
                                                 </div>
                                                 <div>
@@ -406,16 +456,12 @@ export const Leads: React.FC = () => {
                                         <td style={{ padding: '14px 16px', fontFamily: BD, fontSize: 11, color: '#4A4F5A', whiteSpace: 'nowrap' }}>{lead.last_action ?? '—'}</td>
                                         <td style={{ padding: '14px 16px' }}>
                                             <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
-                                                <motion.button whileHover={{ scale: 1.015, boxShadow: '0 0 22px rgba(255,122,41,0.22)' }} whileTap={{ scale: 0.97 }}
-                                                    onClick={() => handleDFY(lead.id)}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 9, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.4)', color: '#FF7A29', fontFamily: H, fontSize: 8, fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                                    <Zap size={10} />DFY
-                                                </motion.button>
-                                                <motion.button whileHover={{ scale: 1.015, boxShadow: '0 0 22px rgba(122,159,255,0.2)' }} whileTap={{ scale: 0.97 }}
-                                                    onClick={() => handleAPV(lead.id)}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 9, background: 'linear-gradient(145deg,#1A1E2C,#141620)', border: '1px solid rgba(122,159,255,0.35)', color: '#7A9FFF', fontFamily: H, fontSize: 8, fontWeight: 700, letterSpacing: '0.12em', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                                    <FlaskConical size={10} />APV
-                                                </motion.button>
+                                                <button onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}
+                                                    style={{ background: 'none', border: 'none', color: '#7A7F8A', cursor: 'pointer', fontFamily: MN, fontSize: 8, letterSpacing: '0.1em' }}>VIEW</button>
+                                                <button onClick={() => setEditingLead(lead)}
+                                                    style={{ background: 'none', border: 'none', color: '#7A9FFF', cursor: 'pointer', fontFamily: MN, fontSize: 8, letterSpacing: '0.1em' }}>EDIT</button>
+                                                <button onClick={() => handleDelete(lead.id)}
+                                                    style={{ background: 'none', border: 'none', color: '#FF4B4B', cursor: 'pointer', fontFamily: MN, fontSize: 8, letterSpacing: '0.1em' }}>DELETE</button>
                                             </div>
                                         </td>
                                     </motion.tr>
@@ -454,6 +500,13 @@ export const Leads: React.FC = () => {
             {/* Modals */}
             <AnimatePresence>
                 {showAdd && <AddLeadModal onClose={() => setShowAdd(false)} onSaved={fetchLeads} />}
+                {editingLead && (
+                    <AddLeadModal
+                        lead={editingLead}
+                        onClose={() => setEditingLead(null)}
+                        onSaved={fetchLeads}
+                    />
+                )}
                 {showDFY && <LeadGenModal type="DFY" onClose={() => setShowDFY(false)} />}
                 {showAPV && <LeadGenModal type="APV" onClose={() => setShowAPV(false)} />}
             </AnimatePresence>

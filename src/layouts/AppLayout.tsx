@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import clsx from 'clsx';
-import { LayoutDashboard, Users, UserCog, LineChart, Settings, Bell, Search, Hexagon } from 'lucide-react';
+import { LayoutDashboard, Users, UserCog, LineChart, Settings, Bell, Search, Hexagon, Calendar, Mail, FlaskConical } from 'lucide-react';
 
 const NavItem = ({ to, icon: Icon, label }: { to: string; icon: any; label: string }) => (
     <NavLink
@@ -37,10 +37,13 @@ export const AppLayout: React.FC = () => {
 
                 <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto custom-scrollbar">
                     <NavItem to="/" icon={LayoutDashboard} label="Dashboard" />
-                    <NavItem to="/leads" icon={Search} label="Lead Research" />
-                    <NavItem to="/crm" icon={Users} label="CRM Pipeline" />
-                    <NavItem to="/agents" icon={UserCog} label="Agent Manager" />
-                    <NavItem to="/analytics" icon={LineChart} label="Analytics Suite" />
+                    <NavItem to="/planner" icon={Calendar} label="Planner" />
+                    <NavItem to="/leads" icon={Search} label="Leads" />
+                    <NavItem to="/research" icon={FlaskConical} label="Research" />
+                    <NavItem to="/crm" icon={Users} label="CRM" />
+                    <NavItem to="/email-generator" icon={Mail} label="Email Gen" />
+                    <NavItem to="/agents" icon={UserCog} label="Agents" />
+                    <NavItem to="/analytics" icon={LineChart} label="Analytics" />
                     <NavItem to="/settings" icon={Settings} label="Settings" />
                 </nav>
 

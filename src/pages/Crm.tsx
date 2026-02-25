@@ -5,8 +5,9 @@ import {
     Calendar, Tag, Loader2, AlertCircle, StickyNote
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import type { CrmDeal } from '../../lib/supabase';
+import type { Lead } from '../../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { Trash2 } from 'lucide-react';
 
 const H = 'JetBrains Mono, monospace';
 const BD = 'Inter, sans-serif';
@@ -29,13 +30,15 @@ const TAG_COLORS: Record<string, { bg: string; border: string; text: string }> =
 
 // ─── Deal Card ─────────────────────────────────────────────────────────────────
 const DealCard: React.FC<{
-    deal: CrmDeal;
+    deal: Lead;
     columnColor: string;
-    onDragStart: (e: React.DragEvent, deal: CrmDeal) => void;
+    onDragStart: (e: React.DragEvent, deal: Lead) => void;
     onClick: () => void;
+    onDelete: (e: React.MouseEvent, id: string) => void;
     isDragging: boolean;
-}> = ({ deal, columnColor, onDragStart, onClick, isDragging }) => {
-    const tagC = TAG_COLORS[deal.tag] ?? TAG_COLORS.Medium;
+}> = ({ deal, columnColor, onDragStart, onClick, onDelete, isDragging }) => {
+    const scoreTag = deal.score && deal.score > 80 ? 'High' : deal.score && deal.score > 40 ? 'Medium' : 'Low';
+    const tagC = TAG_COLORS[scoreTag] ?? TAG_COLORS.Medium;
     return (
         <motion.div
             layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -47,8 +50,16 @@ const DealCard: React.FC<{
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: columnColor, borderRadius: '14px 0 0 14px', opacity: 0.6 }} />
             <div style={{ paddingLeft: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
-                    <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: 'var(--text-primary,#E2E4E9)', lineHeight: 1.4 }}>{deal.title}</p>
-                    <span style={{ fontFamily: MN, fontSize: 8, letterSpacing: '0.14em', padding: '3px 8px', borderRadius: 99, flexShrink: 0, background: tagC.bg, border: `1px solid ${tagC.border}`, color: tagC.text }}>{deal.tag}</span>
+                    <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: 'var(--text-primary,#E2E4E9)', lineHeight: 1.4 }}>{deal.name}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontFamily: MN, fontSize: 8, letterSpacing: '0.14em', padding: '3px 8px', borderRadius: 99, flexShrink: 0, background: tagC.bg, border: `1px solid ${tagC.border}`, color: tagC.text }}>{scoreTag}</span>
+                        <motion.button
+                            whileHover={{ color: '#FF4B4B', background: 'rgba(255,75,75,0.1)' }}
+                            onClick={(e) => onDelete(e, deal.id)}
+                            style={{ padding: 4, borderRadius: 6, background: 'none', border: 'none', color: '#4A4F5A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Trash2 size={12} />
+                        </motion.button>
+                    </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -62,7 +73,7 @@ const DealCard: React.FC<{
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                             <Calendar size={9} style={{ color: '#3A3F4A' }} />
-                            <span style={{ fontFamily: MN, fontSize: 9, color: '#3A3F4A', letterSpacing: '0.06em' }}>{deal.date ?? ''}</span>
+                            <span style={{ fontFamily: MN, fontSize: 9, color: '#3A3F4A', letterSpacing: '0.06em' }}>{deal.created_at ? new Date(deal.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}</span>
                         </div>
                     </div>
                 </div>
@@ -73,17 +84,16 @@ const DealCard: React.FC<{
 
 // ─── Deal Modal (Create / Edit) ────────────────────────────────────────────────
 const DealModal: React.FC<{
-    deal?: Partial<CrmDeal>;
+    deal?: Partial<Lead>;
     columnId?: string;
     onClose: () => void;
     onSaved: () => void;
 }> = ({ deal, columnId, onClose, onSaved }) => {
     const toast = useToast();
     const isEdit = !!deal?.id;
-    const [f, setF] = useState<Partial<CrmDeal>>(deal ?? {
-        title: '', company: '', value: '', tag: 'Medium',
-        status: 'New', notes: '', column_id: columnId ?? 'new',
-        date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }),
+    const [f, setF] = useState<Partial<Lead>>(deal ?? {
+        name: '', company: '', value: '', score: 50,
+        status: 'New', notes: '', crm_stage: columnId ?? 'new',
     });
     const [saving, setSaving] = useState(false);
     const [err, setErr] = useState('');
@@ -102,9 +112,10 @@ const DealModal: React.FC<{
         const payload = { ...f };
         let error;
         if (isEdit) {
-            ({ error } = await supabase.from('crm_deals').update(payload).eq('id', deal!.id!));
+            ({ error } = await supabase.from('leads').update(payload).eq('id', deal!.id!));
         } else {
-            ({ error } = await supabase.from('crm_deals').insert([payload]));
+            const initials = f.name?.split(' ').map(w => w[0] || '').join('').slice(0, 2).toUpperCase() || '??';
+            ({ error } = await supabase.from('leads').insert([{ ...payload, initials, last_action: 'Created from CRM' }]));
         }
         setSaving(false);
         if (error) { setErr(error.message); return; }
@@ -143,13 +154,13 @@ const DealModal: React.FC<{
                             </div>
                             <div>
                                 <label style={labelSt}>Priority</label>
-                                <select value={f.tag ?? 'Medium'} onChange={e => setF(p => ({ ...p, tag: e.target.value as CrmDeal['tag'] }))} style={inputSt}>
+                                <select value={f.score && f.score > 80 ? 'High' : f.score && f.score > 40 ? 'Medium' : 'Low'} onChange={e => setF(p => ({ ...p, score: e.target.value === 'High' ? 100 : e.target.value === 'Medium' ? 50 : 20 }))} style={inputSt}>
                                     {['High', 'Medium', 'Low'].map(t => <option key={t}>{t}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label style={labelSt}>Stage</label>
-                                <select value={f.column_id ?? 'new'} onChange={e => setF(p => ({ ...p, column_id: e.target.value }))} style={inputSt}>
+                                <select value={(f as any).crm_stage ?? 'new'} onChange={e => setF(p => ({ ...p, crm_stage: e.target.value }))} style={inputSt}>
                                     {COLUMNS.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                                 </select>
                             </div>
@@ -173,13 +184,14 @@ const DealModal: React.FC<{
 
 // ─── Deal Detail Drawer ────────────────────────────────────────────────────────
 const DealDetailDrawer: React.FC<{
-    deal: CrmDeal;
+    deal: Lead;
     colTitle: string;
     onClose: () => void;
     onEdit: () => void;
 }> = ({ deal, colTitle, onClose, onEdit }) => {
-    const col = COLUMNS.find(c => c.id === deal.column_id);
-    const tagC = TAG_COLORS[deal.tag] ?? TAG_COLORS.Medium;
+    const col = COLUMNS.find(c => c.id === (deal as any).crm_stage);
+    const scoreTag = deal.score && deal.score > 80 ? 'High' : deal.score && deal.score > 40 ? 'Medium' : 'Low';
+    const tagC = TAG_COLORS[scoreTag] ?? TAG_COLORS.Medium;
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ position: 'fixed', inset: 0, zIndex: 9990, display: 'flex', alignItems: 'stretch', justifyContent: 'flex-end' }}
@@ -234,48 +246,58 @@ const DealDetailDrawer: React.FC<{
 
 // ─── CRM Page ─────────────────────────────────────────────────────────────────
 export const Crm: React.FC = () => {
-    const [deals, setDeals] = useState<CrmDeal[]>([]);
+    const toast = useToast();
+    const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [newDealCol, setNewDealCol] = useState<string | null>(null);
-    const [editingDeal, setEditingDeal] = useState<CrmDeal | null>(null);
-    const [viewingDeal, setViewingDeal] = useState<CrmDeal | null>(null);
-    const [draggingDeal, setDraggingDeal] = useState<CrmDeal | null>(null);
+    const [editingDeal, setEditingDeal] = useState<Lead | null>(null);
+    const [viewingDeal, setViewingDeal] = useState<Lead | null>(null);
+    const [draggingDeal, setDraggingDeal] = useState<Lead | null>(null);
     const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
-    const fetchDeals = useCallback(async () => {
+    const fetchLeads = useCallback(async () => {
         setLoading(true); setError('');
-        const { data, error: err } = await supabase.from('crm_deals').select('*').order('created_at', { ascending: false });
+        const { data, error: err } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
         setLoading(false);
         if (err) { setError(err.message); return; }
-        setDeals(data ?? []);
+        setLeads(data ?? []);
     }, []);
 
-    useEffect(() => { fetchDeals(); }, [fetchDeals]);
+    useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
-    // ─── Realtime: refresh board on any crm_deals change ───────────────────────
+    // ─── Realtime: refresh board on any leads change ───────────────────────
     useEffect(() => {
         const channel = supabase
             .channel('crm_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals' }, () => {
-                fetchDeals();
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+                fetchLeads();
             })
             .subscribe();
         return () => { supabase.removeChannel(channel); };
-    }, [fetchDeals]);
+    }, [fetchLeads]);
 
-    const dealsInCol = (colId: string) => deals.filter(d => d.column_id === colId);
+    const dealsInCol = (colId: string) => leads.filter(l => (l as any).crm_stage === colId || (colId === 'new' && !(l as any).crm_stage));
 
     const handleDrop = async (colId: string) => {
-        if (!draggingDeal || draggingDeal.column_id === colId) { setDraggingDeal(null); setDragOverCol(null); return; }
-        const updated = { ...draggingDeal, column_id: colId };
-        setDeals(prev => prev.map(d => d.id === draggingDeal.id ? updated : d));
-        await supabase.from('crm_deals').update({ column_id: colId }).eq('id', draggingDeal.id);
+        if (!draggingDeal || (draggingDeal as any).crm_stage === colId) { setDraggingDeal(null); setDragOverCol(null); return; }
+        const updated = { ...draggingDeal, crm_stage: colId };
+        setLeads(prev => prev.map(l => l.id === draggingDeal.id ? updated : l));
+        await supabase.from('leads').update({ crm_stage: colId }).eq('id', draggingDeal.id);
         setDraggingDeal(null); setDragOverCol(null);
     };
 
-    const totalValue = deals.reduce((sum, d) => {
-        const n = parseFloat((d.value ?? '').replace(/[^0-9.]/g, ''));
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (!confirm('Delete this lead?')) return;
+        const { error } = await supabase.from('leads').delete().eq('id', id);
+        if (error) { toast.error(error.message); return; }
+        toast.success('Lead removed');
+        fetchLeads();
+    };
+
+    const totalValue = leads.reduce((sum, l) => {
+        const n = parseFloat((l.value ?? '').replace(/[^0-9.]/g, ''));
         return sum + (isNaN(n) ? 0 : n);
     }, 0);
 
@@ -289,7 +311,7 @@ export const Crm: React.FC = () => {
                     <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.3em', color: '#7A7F8A', textTransform: 'uppercase', marginBottom: 10 }}>// Sales · Pipeline</p>
                     <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: 'var(--text-primary,#FFF)', letterSpacing: '-0.5px', textTransform: 'uppercase', lineHeight: 1 }}>CRM Board</h1>
                     <p style={{ fontFamily: BD, fontSize: 14, color: '#7A7F8A', marginTop: 8 }}>
-                        {deals.length} deal{deals.length !== 1 ? 's' : ''} · ${totalValue.toLocaleString()} pipeline · Live from Supabase
+                        {leads.length} lead{leads.length !== 1 ? 's' : ''} · ${totalValue.toLocaleString()} pipeline · Live from Supabase
                     </p>
                 </div>
                 <motion.button whileHover={{ scale: 1.015, boxShadow: '0 0 22px rgba(255,122,41,0.22)' }} whileTap={{ scale: 0.97 }}
@@ -302,8 +324,8 @@ export const Crm: React.FC = () => {
             {error && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 18px', borderRadius: 12, background: 'rgba(217,91,22,0.08)', border: '1px solid rgba(217,91,22,0.3)' }}>
                     <AlertCircle size={14} style={{ color: '#D95B16' }} />
-                    <span style={{ fontFamily: BD, fontSize: 13, color: '#D95B16' }}>Failed to load deals: {error}</span>
-                    <button onClick={fetchDeals} style={{ marginLeft: 'auto', fontFamily: H, fontSize: 9, color: '#FF7A29', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em' }}>RETRY</button>
+                    <span style={{ fontFamily: BD, fontSize: 13, color: '#D95B16' }}>Failed to load leads: {error}</span>
+                    <button onClick={fetchLeads} style={{ marginLeft: 'auto', fontFamily: H, fontSize: 9, color: '#FF7A29', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em' }}>RETRY</button>
                 </div>
             )}
 
@@ -350,7 +372,8 @@ export const Crm: React.FC = () => {
                                         <DealCard key={deal.id} deal={deal} columnColor={col.color}
                                             isDragging={draggingDeal?.id === deal.id}
                                             onDragStart={(_, d) => setDraggingDeal(d)}
-                                            onClick={() => setViewingDeal(deal)} />
+                                            onClick={() => setViewingDeal(deal)}
+                                            onDelete={handleDelete} />
                                     ))}
                                 </div>
                             </div>
@@ -362,11 +385,11 @@ export const Crm: React.FC = () => {
             {/* Modals */}
             <AnimatePresence>
                 {newDealCol && (
-                    <DealModal columnId={newDealCol} onClose={() => setNewDealCol(null)} onSaved={fetchDeals} />
+                    <DealModal columnId={newDealCol} onClose={() => setNewDealCol(null)} onSaved={fetchLeads} />
                 )}
                 {editingDeal && (
-                    <DealModal deal={editingDeal} columnId={editingDeal.column_id}
-                        onClose={() => setEditingDeal(null)} onSaved={() => { fetchDeals(); setViewingDeal(null); }} />
+                    <DealModal deal={editingDeal} columnId={(editingDeal as any).crm_stage}
+                        onClose={() => setEditingDeal(null)} onSaved={() => { fetchLeads(); setViewingDeal(null); }} />
                 )}
                 {viewingDeal && !editingDeal && (
                     <DealDetailDrawer
