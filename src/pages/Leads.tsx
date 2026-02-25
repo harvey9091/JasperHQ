@@ -300,28 +300,28 @@ export const Leads: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchLeads]);
 
-    const handleDFY = async (leadId: string) => {
-        setActiveLeadId(leadId);
+    const handleDFY = async (leadId?: string | null) => {
+        if (leadId) setActiveLeadId(leadId);
         setShowDFY(true);
         try {
             await fetch('http://localhost:3001/agent/dfy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ leadId })
+                body: JSON.stringify({ leadId: leadId || null })
             });
         } catch (err) {
             console.error('DFY fail:', err);
         }
     };
 
-    const handleAPV = async (leadId: string) => {
-        setActiveLeadId(leadId);
+    const handleAPV = async (leadId?: string | null) => {
+        if (leadId) setActiveLeadId(leadId);
         setShowAPV(true);
         try {
             await fetch('http://localhost:3001/agent/apv', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ leadId })
+                body: JSON.stringify({ leadId: leadId || null })
             });
         } catch (err) {
             console.error('APV fail:', err);
@@ -360,15 +360,13 @@ export const Leads: React.FC = () => {
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                     <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => selectedLeadId && handleDFY(selectedLeadId)}
-                        disabled={!selectedLeadId}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'rgba(255,122,41,0.03)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: selectedLeadId ? 'pointer' : 'not-allowed', opacity: selectedLeadId ? 1 : 0.4 }}>
+                        onClick={() => handleDFY(selectedLeadId)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'rgba(255,122,41,0.03)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: 'pointer' }}>
                         <Zap size={12} />DFY
                     </motion.button>
                     <motion.button whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => selectedLeadId && handleAPV(selectedLeadId)}
-                        disabled={!selectedLeadId}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'rgba(122,159,255,0.03)', border: '1px solid rgba(122,159,255,0.35)', color: '#7A9FFF', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: selectedLeadId ? 'pointer' : 'not-allowed', opacity: selectedLeadId ? 1 : 0.4 }}>
+                        onClick={() => handleAPV(selectedLeadId)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'rgba(122,159,255,0.03)', border: '1px solid rgba(122,159,255,0.35)', color: '#7A9FFF', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: 'pointer' }}>
                         <FlaskConical size={12} />APV
                     </motion.button>
                     <motion.button whileHover={{ scale: 1.015, boxShadow: '0 0 22px rgba(255,122,41,0.22)' }} whileTap={{ scale: 0.97 }}
