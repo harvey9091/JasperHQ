@@ -194,11 +194,25 @@ export const ResearchHub: React.FC = () => {
                     <h1 style={{ fontFamily: H, fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, color: '#FFF', letterSpacing: '-0.5px', textTransform: 'uppercase', lineHeight: 1 }}>Research Operations</h1>
                     <p style={{ fontFamily: BD, fontSize: 14, color: '#7A7F8A', marginTop: 8 }}>Deep intelligence workflows and historical analysis.</p>
                 </div>
-                <motion.button whileHover={{ boxShadow: '0 0 26px rgba(255,122,41,0.32)', borderColor: 'rgba(255,122,41,0.65)' }} whileTap={{ scale: 0.97 }}
-                    onClick={() => setModal(true)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 12, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', cursor: 'pointer', boxShadow: '0 0 14px rgba(255,122,41,0.12)' }}>
-                    <Microscope size={13} />OPEN LEAD RESEARCH
-                </motion.button>
+                <div style={{ display: 'flex', gap: 12 }}>
+                    <motion.button whileHover={{ borderColor: 'rgba(255,122,41,0.45)', color: '#FF7A29' }}
+                        onClick={async () => {
+                            try {
+                                await fetch('http://localhost:3001/agent/research', { method: 'POST' });
+                                toast.success('Research agent started');
+                            } catch (err) {
+                                toast.error('Agent failed to start');
+                            }
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#7A7F8A', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <Microscope size={12} />RUN RESEARCH
+                    </motion.button>
+                    <motion.button whileHover={{ boxShadow: '0 0 26px rgba(255,122,41,0.32)', borderColor: 'rgba(255,122,41,0.65)' }} whileTap={{ scale: 0.97 }}
+                        onClick={() => setModal(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 12, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', cursor: 'pointer', boxShadow: '0 0 14px rgba(255,122,41,0.12)' }}>
+                        <FlaskConical size={13} />VIEW RESEARCH
+                    </motion.button>
+                </div>
             </div>
 
             {/* Stats row */}
