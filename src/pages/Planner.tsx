@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Video, Mail, Database, BookOpen, Cpu, Target, Dumbbell, RefreshCw, MessageSquare, Clock, X, Check, ChevronRight, Zap, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../components/ui/Toast';
 
 const H = 'JetBrains Mono, monospace';
 const BD = 'Inter, sans-serif';
@@ -14,6 +15,12 @@ const CRON_TRIGGERS = [
     { name: 'Outreach Blast', next: 'Tomorrow', agent: 'Phantom', color: '#7A9FFF' },
     { name: 'Report Compile', next: 'in 6h', agent: 'Mirage', color: '#A78BFA' },
 ];
+
+const PLANNER_ICON_MAP: Record<string, React.ReactNode> = {
+    video: <Video size={14} />, mail: <Mail size={14} />, database: <Database size={14} />,
+    book: <BookOpen size={14} />, cpu: <Cpu size={14} />, target: <Target size={14} />,
+    dumbbell: <Dumbbell size={14} />, message: <MessageSquare size={14} />,
+};
 
 interface TimeBlock {
     time: string; label: string; description: string;
@@ -114,9 +121,10 @@ const RegenModal: React.FC<{ current: Focus; onSelect: (f: Focus) => void; onClo
 
 // ─── PLANNER PAGE ─────────────────────────────────────────────────────────────
 export const Planner: React.FC = () => {
+    const toast = useToast();
     const [focus, setFocus] = useState<Focus>('editing');
     const [modal, setModal] = useState(false);
-    const [toast, setToast] = useState(false);
+    const [showDiscordToast, setShowDiscordToast] = useState(false);
     const [livePlan, setLivePlan] = useState<TimeBlock[] | null>(null);
     const [liveCrons, setLiveCrons] = useState<typeof CRON_TRIGGERS | null>(null);
     const [loading, setLoading] = useState(false);
@@ -141,16 +149,11 @@ export const Planner: React.FC = () => {
             : await supabase.from('tasks').select('*').eq('focus', currentFocus).order('time', { ascending: true });
 
         if (byFocus && byFocus.length > 0) {
-            const iconMap: Record<string, React.ReactNode> = {
-                video: <Video size={14} />, mail: <Mail size={14} />, database: <Database size={14} />,
-                book: <BookOpen size={14} />, cpu: <Cpu size={14} />, target: <Target size={14} />,
-                dumbbell: <Dumbbell size={14} />, message: <MessageSquare size={14} />,
-            };
             const blocks: TimeBlock[] = byFocus.map((t: { time: string; label: string; description?: string | null; type?: string | null; color?: string | null; tag?: string | null }) => ({
                 time: t.time ?? '–',
                 label: t.label ?? 'Task',
                 description: t.description ?? '',
-                icon: iconMap[t.type ?? ''] ?? <Target size={14} />,
+                icon: PLANNER_ICON_MAP[t.type ?? ''] ?? <Target size={14} />,
                 color: t.color ?? '#FF7A29',
                 tag: t.tag ?? 'TASK',
             }));
@@ -188,16 +191,35 @@ export const Planner: React.FC = () => {
         if (!prompt) return;
         setGenerating(true);
         try {
-            await fetch('http://localhost:3001/agent/planner', {
+            const res = await fetch('http://localhost:18789/agent/planner', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })
             });
-            // After triggering, we might want to wait or just rely on realtime if implemented.
-            // But let's just refresh tasks after a delay or assuming it's quick.
-            setTimeout(() => fetchTasks(focus), 2000);
+
+            if (!res.ok) throw new Error('API failed');
+
+            const data = await res.json();
+            const taskData = data.tasks || data;
+
+            if (Array.isArray(taskData)) {
+                const blocks: TimeBlock[] = taskData.map((t: any) => ({
+                    time: t.time ?? '–',
+                    label: t.label ?? 'Task',
+                    description: t.description ?? '',
+                    icon: PLANNER_ICON_MAP[t.type ?? ''] ?? <Target size={14} />,
+                    color: t.color ?? '#FF7A29',
+                    tag: t.tag ?? 'TASK',
+                }));
+                setLivePlan(blocks);
+                toast.success('Schedule generated successfully');
+            } else {
+                // Fallback to manual refresh if no tasks in response
+                setTimeout(() => fetchTasks(focus), 1500);
+                toast.success('Planning initiated...');
+            }
         } catch (err) {
-            console.error('Planner fail:', err);
+            toast.error('Failed to generate schedule');
         } finally {
             setGenerating(false);
         }
@@ -208,8 +230,8 @@ export const Planner: React.FC = () => {
     const focusMeta = FOCUS_OPTIONS.find(f => f.key === focus)!;
 
     const sendDiscord = () => {
-        setToast(true);
-        setTimeout(() => setToast(false), 2800);
+        setShowDiscordToast(true);
+        setTimeout(() => setShowDiscordToast(false), 2800);
     };
 
     return (
@@ -340,7 +362,7 @@ export const Planner: React.FC = () => {
 
             {/* Toast */}
             <AnimatePresence>
-                {toast && (
+                {showDiscordToast && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
                         style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 22px', borderRadius: 14, background: 'linear-gradient(145deg,#1A1C20,#1E2024)', border: '1px solid rgba(75,231,127,0.28)', boxShadow: '0 0 24px rgba(75,231,127,0.12)', zIndex: 9995 }}>
                         <Check size={13} style={{ color: '#4BE77F' }} />
