@@ -14,6 +14,7 @@ export class LuffyConnection {
     private heartbeatTimer: any = null;
     private isManuallyClosed: boolean = false;
     private lastReplyText: string = '';
+    private streamingBuffer: string = '';
     private activeRunId: string | null = null;
 
     onMessage: (event: LuffyUnifiedEvent) => void = () => { };
@@ -119,29 +120,45 @@ export class LuffyConnection {
             const payload = data.payload;
             const state = payload.state;
             const contentArray = payload.message?.content;
-            const fullText = (contentArray && Array.isArray(contentArray) && contentArray[0]?.text) || '';
+            let fullText = (contentArray && Array.isArray(contentArray) && contentArray[0]?.text) || '';
 
-            if (state === 'delta') {
+            // 1. Strip internal tags immediately
+            fullText = this.cleanAgentOutput(fullText);
+
+            if (state === 'delta' || state === 'final') {
                 if (!this.activeRunId || this.activeRunId !== payload.runId) {
                     this.activeRunId = payload.runId;
                     this.lastReplyText = '';
+                    this.streamingBuffer = '';
                     this.onMessage({ type: 'reply-start' });
                 }
 
-                // OpenClaw deltas are typically cumulative latest states in 'chat' events
+                // Append new content to buffer
                 const newChunk = fullText.slice(this.lastReplyText.length);
                 if (newChunk) {
-                    this.onMessage({ type: 'reply-chunk', text: newChunk });
+                    this.streamingBuffer += newChunk;
                     this.lastReplyText = fullText;
+                    // We DO NOT send reply-chunk to the UI anymore per requirements
                 }
-            } else if (state === 'final') {
-                this.onMessage({ type: 'reply', text: fullText });
-                this.onMessage({ type: 'reply-end' });
-                this.activeRunId = null;
-                this.lastReplyText = '';
+
+                if (state === 'final') {
+                    // Only send the fully collected message now
+                    const finalMsg = this.streamingBuffer.trim();
+
+                    // If the message is just NO_REPLY (after stripping), we treat it as empty or don't show
+                    if (finalMsg && finalMsg !== 'NO_REPLY') {
+                        this.onMessage({ type: 'reply', text: finalMsg });
+                    }
+
+                    this.onMessage({ type: 'reply-end' });
+                    this.activeRunId = null;
+                    this.streamingBuffer = '';
+                    this.lastReplyText = '';
+                }
             } else if (state === 'error') {
                 this.onMessage({ type: 'error', message: payload.errorMessage || 'Chat error' });
                 this.activeRunId = null;
+                this.streamingBuffer = '';
             }
             return;
         }
@@ -201,6 +218,17 @@ export class LuffyConnection {
         if (this.ws?.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(data));
         }
+    }
+
+    private cleanAgentOutput(text: string): string {
+        if (!text) return '';
+        // Handles <begin_of_box>, <|begin_of_box|>, NO_REPLY, etc.
+        return text
+            .replace(/<\|?begin_of_box\|?>/gi, '')
+            .replace(/<\|?end_of_box\|?>/gi, '')
+            .replace(/\bNO_REPLY\b/gi, '')
+            .replace(/\[\[\s*audio_as_voice\s*\]\]/gi, '')
+            .trim();
     }
 
     disconnect() {

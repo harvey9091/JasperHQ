@@ -25,39 +25,17 @@ export const useLuffyChat = () => {
             switch (event.type) {
                 case 'reply-start':
                     setIsThinking(true);
-                    setMessages(prev => [
-                        ...prev,
-                        { id: crypto.randomUUID(), role: 'assistant', content: '' }
-                    ]);
                     break;
 
                 case 'reply-chunk':
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        const last = newMessages[newMessages.length - 1];
-                        if (last && last.role === 'assistant') {
-                            last.content += event.text;
-                            return newMessages;
-                        }
-                        return prev;
-                    });
+                    // Chunks are now buffered in the connection layer
                     break;
 
                 case 'reply':
-                    setIsThinking(false);
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        const last = newMessages[newMessages.length - 1];
-                        if (last && last.role === 'assistant') {
-                            last.content = event.text;
-                            return newMessages;
-                        } else {
-                            return [
-                                ...prev,
-                                { id: crypto.randomUUID(), role: 'assistant', content: event.text }
-                            ];
-                        }
-                    });
+                    setMessages(prev => [
+                        ...prev,
+                        { id: crypto.randomUUID(), role: 'assistant', content: event.text }
+                    ]);
                     break;
 
                 case 'reply-end':
