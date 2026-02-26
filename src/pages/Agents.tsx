@@ -341,7 +341,8 @@ export const Agents: React.FC = () => {
         // 1. Fetch real agents from OpenClaw
         let apiAgents: any[] = [];
         try {
-            const res = await fetch('http://localhost:3001/agent/list');
+            const baseUrl = import.meta.env.VITE_OPENCLAW_BASE_URL || 'http://127.0.0.1:18789';
+            const res = await fetch(`${baseUrl}/agent/list`);
             const data = await res.json();
             apiAgents = Array.isArray(data) ? data : (data.agents || []);
         } catch (err) {

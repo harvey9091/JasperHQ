@@ -191,7 +191,8 @@ export const Planner: React.FC = () => {
         if (!prompt) return;
         setGenerating(true);
         try {
-            const res = await fetch('http://localhost:18789/agent/planner', {
+            const baseUrl = import.meta.env.VITE_OPENCLAW_BASE_URL || 'http://127.0.0.1:18789';
+            const res = await fetch(`${baseUrl}/agent/planner`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })

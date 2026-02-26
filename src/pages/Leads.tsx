@@ -304,11 +304,7 @@ export const Leads: React.FC = () => {
         if (leadId) setActiveLeadId(leadId);
         setShowDFY(true);
         try {
-            await fetch('http://localhost:3001/agent/dfy', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ leadId: leadId || null })
-            });
+            await triggerDFY({ leadId: leadId || null });
         } catch (err) {
             console.error('DFY fail:', err);
         }
@@ -318,11 +314,7 @@ export const Leads: React.FC = () => {
         if (leadId) setActiveLeadId(leadId);
         setShowAPV(true);
         try {
-            await fetch('http://localhost:3001/agent/apv', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ leadId: leadId || null })
-            });
+            await triggerAPV({ leadId: leadId || null });
         } catch (err) {
             console.error('APV fail:', err);
         }

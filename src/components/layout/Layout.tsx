@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { TopNav } from './TopNav';
+import { LuffyChat } from '../LuffyChat';
 
 export const Layout: React.FC = () => (
     <div className="min-h-screen relative" style={{ background: 'linear-gradient(160deg, #111215 0%, #161820 50%, #1C1E22 100%)' }}>
@@ -21,5 +22,8 @@ export const Layout: React.FC = () => (
         >
             <Outlet />
         </main>
+
+        <LuffyChat />
     </div>
 );
+

@@ -5,6 +5,7 @@ import { Microscope, Search, X, CheckCircle2, Clock, ArrowRight, FlaskConical, B
 import { supabase } from '../../lib/supabase';
 import type { Lead } from '../../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { triggerResearch } from '../lib/openClaw';
 
 const H = 'JetBrains Mono, monospace';
 const BD = 'Inter, sans-serif';
@@ -198,7 +199,7 @@ export const ResearchHub: React.FC = () => {
                     <motion.button whileHover={{ borderColor: 'rgba(255,122,41,0.45)', color: '#FF7A29' }}
                         onClick={async () => {
                             try {
-                                await fetch('http://localhost:3001/agent/research', { method: 'POST' });
+                                await triggerResearch({});
                                 toast.success('Research agent started');
                             } catch (err) {
                                 toast.error('Agent failed to start');
