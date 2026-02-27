@@ -135,7 +135,7 @@ export const LuffyChat: React.FC = () => {
                                             <AgentAvatar src={LuffyImg} alt="Luffy" size={64} />
                                         </div>
                                         <div>
-                                            <p className="text-white font-medium">Ready for construction, Harvey.</p>
+                                            <p className="text-white font-medium">Yooo, Ready for construction, Harvey.</p>
                                             <p className="text-white/60 text-sm">How can I assist with JasperHQ today?</p>
                                         </div>
                                     </div>
