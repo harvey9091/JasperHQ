@@ -3,6 +3,14 @@ import { Cpu, Activity, Terminal, Play, RotateCcw, Clock, CheckCircle, XCircle, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import type { MonitorLog } from '../../lib/supabase';
+import LuffyImg from "@/Assets/luffy.png";
+import ZoroImg from "@/Assets/zoro.png";
+import NamiImg from "@/Assets/nami.png";
+import RobinImg from "@/Assets/robin.png";
+import SanjiImg from "@/Assets/sanji.png";
+import BrookImg from "@/Assets/brook.png";
+import UsoppImg from "@/Assets/usopp.png";
+import { AgentAvatar } from '../components/common/AgentAvatar';
 
 const H = 'JetBrains Mono, monospace';
 const BD = 'Inter, sans-serif';
@@ -18,6 +26,16 @@ const AGENT_DEFS = [
     { id: 'AGT-006', name: 'Usopp', role: 'Outreach & Comms' },
     { id: 'AGT-007', name: 'Luffy', role: 'System Orchestrator' },
 ];
+
+const AGENT_IMAGES: Record<string, string> = {
+    'Luffy': LuffyImg,
+    'Zoro': ZoroImg,
+    'Nami': NamiImg,
+    'Robin': RobinImg,
+    'Sanji': SanjiImg,
+    'Brook': BrookImg,
+    'Usopp': UsoppImg,
+};
 
 interface AgentLive {
     id: string; name: string; role: string;
@@ -267,30 +285,34 @@ const AgentBoxes: React.FC<{ agents: AgentLive[] }> = ({ agents }) => (
 const AgentCard: React.FC<{ agent: AgentLive; i: number }> = ({ agent, i }) => {
     const cfg = ST[agent.status];
     const running = agent.status === 'RUNNING';
+    const avatarSrc = AGENT_IMAGES[agent.name] || AGENT_IMAGES['Luffy'];
+
     return (
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07, duration: 0.4 }}
             style={{ borderRadius: 14, padding: '16px 18px', background: 'linear-gradient(145deg,#181A1D,#202226)', border: `1px solid ${running ? 'rgba(255,122,41,0.25)' : 'rgba(255,255,255,0.06)'}`, boxShadow: running ? '0 0 20px rgba(255,122,41,0.1),inset 0 1px 0 rgba(255,255,255,0.05)' : 'inset 0 1px 0 rgba(255,255,255,0.04)', position: 'relative', overflow: 'hidden' }}>
             {running && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg,transparent,rgba(255,122,41,0.7),transparent)', borderRadius: '14px 14px 0 0' }} />}
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Cpu size={14} style={{ color: cfg.color }} />
-                    </div>
-                    <div>
-                        <p style={{ fontFamily: H, fontSize: 13, fontWeight: 900, color: '#FFF', letterSpacing: '0.02em', marginBottom: 1 }}>{agent.name}</p>
-                        <p style={{ fontFamily: MN, fontSize: 8, color: '#4A4F5A', letterSpacing: '0.1em' }}>{agent.role}</p>
-                    </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 14 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    <AgentAvatar src={avatarSrc} alt={agent.name} size={48} />
+                    <span style={{ fontFamily: MN, fontSize: 8, color: '#FFF', opacity: 0.3, letterSpacing: '0.05em' }}>{agent.name.toUpperCase()}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 99, background: `${cfg.color}08`, border: `1px solid ${cfg.color}15` }}>
-                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: cfg.color, boxShadow: `0 0 6px ${cfg.glow}`, animation: running ? 'pulse 1s ease-in-out infinite' : undefined }} />
-                    <span style={{ fontFamily: MN, fontSize: 8, fontWeight: 700, color: cfg.color, letterSpacing: '0.1em' }}>{agent.status}</span>
-                </div>
-            </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                <span style={{ fontFamily: MN, fontSize: 7, color: '#3A3F4A', letterSpacing: '1px', textTransform: 'uppercase' }}>MODE:</span>
-                <span style={{ fontFamily: MN, fontSize: 8, fontWeight: 700, color: agent.mode === 'AUTONOMOUS' ? '#FF7A29' : '#5A5F6A', letterSpacing: '0.5px' }}>{agent.mode}</span>
+                <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <p style={{ fontFamily: H, fontSize: 13, fontWeight: 900, color: '#FFF', letterSpacing: '0.02em' }}>{agent.name}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 6px', borderRadius: 99, background: `${cfg.color}08`, border: `1px solid ${cfg.color}15` }}>
+                            <div style={{ width: 4, height: 4, borderRadius: '50%', background: cfg.color, boxShadow: `0 0 6px ${cfg.glow}`, animation: running ? 'pulse 1s ease-in-out infinite' : undefined }} />
+                            <span style={{ fontFamily: MN, fontSize: 7, fontWeight: 700, color: cfg.color, letterSpacing: '0.1em' }}>{agent.status}</span>
+                        </div>
+                    </div>
+                    <p style={{ fontFamily: MN, fontSize: 8, color: '#4A4F5A', letterSpacing: '0.1em' }}>{agent.role}</p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                        <span style={{ fontFamily: MN, fontSize: 7, color: '#3A3F4A', letterSpacing: '1px', textTransform: 'uppercase' }}>MODE:</span>
+                        <span style={{ fontFamily: MN, fontSize: 8, fontWeight: 700, color: agent.mode === 'AUTONOMOUS' ? '#FF7A29' : '#5A5F6A', letterSpacing: '0.5px' }}>{agent.mode}</span>
+                    </div>
+                </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>

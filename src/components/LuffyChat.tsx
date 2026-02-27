@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Command } from 'lucide-react';
+import { MessageCircle, X, Send } from 'lucide-react';
 import { useLuffyChat } from '../luffy/useLuffyChat';
+import LuffyImg from "@/Assets/luffy.png";
+import { AgentAvatar } from './common/AgentAvatar';
 
 export const LuffyChat: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -38,10 +40,16 @@ export const LuffyChat: React.FC = () => {
                 onClick={() => setIsOpen(true)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-gradient-to-br from-[#FF7A29] to-[#D95B16] flex items-center justify-center shadow-[0_8px_32px_rgba(255,122,41,0.3)] z-[9998] border border-white/10"
+                className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-gradient-to-br from-[#FF7A29] to-[#D95B16] flex items-center justify-center shadow-[0_8px_32px_rgba(255,122,41,0.3)] z-[9998] border border-white/10 overflow-hidden"
             >
                 <motion.div
                     animate={isOpen ? { rotate: 90, opacity: 0 } : { rotate: 0, opacity: 1 }}
+                    className="absolute inset-0 flex items-center justify-center bg-[#1A1C20]"
+                >
+                    <img src={LuffyImg} alt="Luffy" className="w-full h-full object-cover" />
+                </motion.div>
+                <motion.div
+                    animate={isOpen ? { rotate: 0, opacity: 1 } : { rotate: -90, opacity: 0 }}
                 >
                     <MessageCircle className="text-white w-8 h-8" />
                 </motion.div>
@@ -70,9 +78,7 @@ export const LuffyChat: React.FC = () => {
                             {/* Header */}
                             <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FF7A29] to-[#D95B16] flex items-center justify-center shadow-lg">
-                                        <Command className="text-white w-6 h-6" />
-                                    </div>
+                                    <AgentAvatar src={LuffyImg} alt="Luffy" size={48} />
                                     <div>
                                         <h3 className="text-white font-semibold text-lg leading-tight">Luffy</h3>
                                         <div className="flex items-center gap-2">
@@ -124,7 +130,10 @@ export const LuffyChat: React.FC = () => {
                             <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
                                 {messages.length === 0 && (
                                     <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-40">
-                                        <Command className="w-12 h-12 text-[#FF7A29]" />
+                                        <div className="relative">
+                                            <div className="absolute inset-0 bg-[#FF7A29]/10 blur-xl rounded-full" />
+                                            <AgentAvatar src={LuffyImg} alt="Luffy" size={64} />
+                                        </div>
                                         <div>
                                             <p className="text-white font-medium">Ready for construction, Harvey.</p>
                                             <p className="text-white/60 text-sm">How can I assist with JasperHQ today?</p>
@@ -136,8 +145,11 @@ export const LuffyChat: React.FC = () => {
                                         key={msg.id}
                                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} items-end gap-3`}
                                     >
+                                        {msg.role !== 'user' && (
+                                            <AgentAvatar src={LuffyImg} alt="Luffy" size={24} className="mb-1" />
+                                        )}
                                         <div
                                             className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-lg ${msg.role === 'user'
                                                 ? 'bg-[#FF7A29] text-white rounded-tr-none shadow-[#FF7A29]/10'
@@ -152,8 +164,9 @@ export const LuffyChat: React.FC = () => {
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="flex justify-start"
+                                        className="flex justify-start items-end gap-3"
                                     >
+                                        <AgentAvatar src={LuffyImg} alt="Luffy" size={24} className="mb-1" />
                                         <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/10 p-4 rounded-2xl rounded-tl-none flex gap-1.5 items-center backdrop-blur-sm shadow-xl">
                                             <motion.div
                                                 animate={{
@@ -188,34 +201,27 @@ export const LuffyChat: React.FC = () => {
                                 <div ref={messagesEndRef} />
                             </div>
 
-                            {/* Footer */}
-                            <div className="p-6 bg-white/[0.02] border-t border-white/5">
-                                <div className="relative flex items-center gap-3">
+                            {/* Input Area */}
+                            <div className="p-6 bg-white/[0.02] border-t border-white/5 mx-6 mb-6 rounded-xl border border-white/10">
+                                <div className="relative flex items-center gap-4">
                                     <textarea
-                                        rows={1}
                                         value={inputValue}
                                         onChange={(e) => setInputValue(e.target.value)}
                                         onKeyDown={handleKeyDown}
-                                        placeholder="Type a message..."
-                                        disabled={isThinking}
-                                        className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/20 focus:outline-none focus:border-[#FF7A29]/50 focus:ring-1 focus:ring-[#FF7A29]/20 transition-all resize-none scrollbar-none disabled:opacity-50"
-                                        style={{ minHeight: '46px', maxHeight: '120px' }}
+                                        placeholder="Type a command or question..."
+                                        rows={1}
+                                        className="flex-1 bg-transparent text-white placeholder-white/20 outline-none resize-none py-2 text-sm"
                                     />
                                     <button
                                         onClick={handleSend}
                                         disabled={!inputValue.trim() || isThinking}
-                                        className="absolute right-2 p-2 rounded-lg bg-[#FF7A29] text-white shadow-lg shadow-[#FF7A29]/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100"
+                                        className={`p-2 rounded-lg transition-all ${inputValue.trim() && !isThinking
+                                            ? 'bg-[#FF7A29] text-white shadow-[0_0_12px_rgba(255,122,41,0.4)]'
+                                            : 'bg-white/5 text-white/20'
+                                            }`}
                                     >
                                         <Send className="w-5 h-5" />
                                     </button>
-                                </div>
-                                <div className="mt-2 px-1 flex justify-between items-center">
-                                    <span className="text-[10px] text-white/20 font-mono uppercase tracking-[0.2em]">OpenClaw Neural Interface v4.0</span>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-[10px] text-white/30 flex items-center gap-1">
-                                            <kbd className="bg-white/5 px-1 rounded border border-white/10 font-sans">Enter</kbd> to send
-                                        </span>
-                                    </div>
                                 </div>
                             </div>
                         </motion.div>
