@@ -68,24 +68,22 @@ export const Dashboard: React.FC = () => {
                 .from('leads')
                 .select('*', { count: 'exact', head: true });
 
-            // Active agents from monitor_logs — latest distinct agent status
+            // Active agents from agent_operations_log
             const { data: agentData } = await supabase
-                .from('monitor_logs')
-                .select('agent, status')
-                .not('agent', 'is', null)
+                .from('agent_operations_log')
+                .select('sender, recipient')
                 .order('created_at', { ascending: false })
                 .limit(100);
 
-            // Deduplicate — get latest status per agent
-            const agentMap = new Map<string, string>();
+            // Deduplicate
+            const agentSet = new Set<string>();
             if (agentData) {
                 for (const row of agentData) {
-                    if (row.agent && !agentMap.has(row.agent)) {
-                        agentMap.set(row.agent, row.status ?? '');
-                    }
+                    if (row.sender && row.sender !== 'User' && row.sender !== 'System') agentSet.add(row.sender);
+                    if (row.recipient && row.recipient !== 'User' && row.recipient !== 'System') agentSet.add(row.recipient);
                 }
             }
-            const activeCount = [...agentMap.values()].filter(s => s === 'active' || s === 'running').length;
+            const activeCount = agentSet.size;
 
             setMetrics({
                 totalLeads: leadsCount ?? 0,
@@ -97,12 +95,22 @@ export const Dashboard: React.FC = () => {
         const fetchLogs = async () => {
             setLogsLoading(true);
             const { data } = await supabase
-                .from('monitor_logs')
-                .select('id, created_at, level, message, agent')
+                .from('agent_operations_log')
+                .select('id, created_at, sender, message_summary')
                 .order('created_at', { ascending: false })
                 .limit(6);
             setLogsLoading(false);
-            if (data) setLogs(data as MonitorLog[]);
+            if (data) {
+                const mappedLogs = data.map(r => ({
+                    id: r.id,
+                    created_at: r.created_at,
+                    level: 'INFO',
+                    message: r.message_summary,
+                    agent: r.sender
+                }));
+                // @ts-ignore
+                setLogs(mappedLogs);
+            }
         };
 
         const fetchPipeline = async () => {
@@ -126,10 +134,10 @@ export const Dashboard: React.FC = () => {
         fetchLogs();
         fetchPipeline();
 
-        // Realtime listener for monitor_logs
+        // Realtime listener
         const channel = supabase
             .channel('dashboard_logs_rt')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'monitor_logs' }, () => {
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'agent_operations_log' }, () => {
                 fetchLogs();
                 fetchMetrics();
             })

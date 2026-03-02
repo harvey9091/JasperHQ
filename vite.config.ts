@@ -6,18 +6,38 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
     server: {
-      port: 3000,
-      host: '0.0.0.0',
+      port: 3001,
+      host: true,
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:8081',
+          changeOrigin: true,
+          secure: false,
+          ws: false,
+          configure: (proxy) => {
+            proxy.on('error', (err, _req, _res) => {
+              console.error('[Vite Proxy Error /api]:', err);
+            });
+          },
+        },
+        '/agent/': {
+          target: 'http://127.0.0.1:8081',
+          changeOrigin: true,
+          secure: false,
+          ws: false,
+          configure: (proxy) => {
+            proxy.on('error', (err, _req, _res) => {
+              console.error('[Vite Proxy Error /agent]:', err);
+            });
+          },
+        },
+      },
     },
     plugins: [react()],
-    define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-      }
-    }
+      },
+    },
   };
 });

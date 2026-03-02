@@ -11,9 +11,18 @@ import { Settings } from './pages/Settings';
 import { Research } from './pages/Research';
 import { ResearchHub } from './pages/ResearchHub';
 import { Planner } from './pages/Planner';
+import { TestZoro } from './pages/TestZoro';
 import { ToastProvider } from './components/ui/Toast';
+import { startAgentStatusPolling } from './store/agentStatusStore';
+import { ensureLuffySession } from './lib/ensureLuffySession';
 
 const App: React.FC = () => {
+  React.useEffect(() => {
+    ensureLuffySession();
+    const stopPolling = startAgentStatusPolling();
+    return () => stopPolling();
+  }, []);
+
   return (
     <ToastProvider>
       <BrowserRouter>
@@ -29,6 +38,7 @@ const App: React.FC = () => {
             <Route path="agents" element={<Agents />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="test-zoro" element={<TestZoro />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

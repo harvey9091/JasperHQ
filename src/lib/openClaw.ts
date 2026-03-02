@@ -23,10 +23,14 @@ export async function runAgent(
     type: string,
     payload: AgentPayload
 ): Promise<AgentResponse> {
+    const token = import.meta.env.VITE_OPENCLAW_TOKEN;
     try {
-        const res = await fetch(`${OPENCLAW_BASE}/agent/${type}`, {
+        const res = await fetch(`/agent/${type}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify(payload),
         });
         if (!res.ok) {

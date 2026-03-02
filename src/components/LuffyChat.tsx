@@ -4,9 +4,12 @@ import { MessageCircle, X, Send } from 'lucide-react';
 import { useLuffyChat } from '../luffy/useLuffyChat';
 import LuffyImg from "@/Assets/luffy.png";
 import { AgentAvatar } from './common/AgentAvatar';
+import { useAgentStatusStore } from '../store/agentStatusStore';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export const LuffyChat: React.FC = () => {
-    const [isOpen, setIsOpen] = useState(false);
+    const { isLuffyChatOpen: isOpen, setLuffyChatOpen: setIsOpen } = useAgentStatusStore();
     const [inputValue, setInputValue] = useState('');
     const { messages, isThinking, isConnected, sendMessage } = useLuffyChat();
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -58,23 +61,26 @@ export const LuffyChat: React.FC = () => {
             {/* Modal Interface */}
             <AnimatePresence>
                 {isOpen && (
-                    <>
-                        {/* Overlay */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsOpen(false)}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999]"
-                        />
+                    <motion.div
+                        key="luffy-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsOpen(false)}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999]"
+                    />
+                )}
 
-                        {/* Chat Modal */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="fixed inset-0 m-auto w-full max-w-[720px] h-[600px] bg-[#111215]/80 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.4)] z-[10000] flex flex-col overflow-hidden"
-                        >
+                {isOpen && (
+                    <motion.div
+                        key="luffy-chat-modal"
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                        className="fixed inset-0 z-[10000] flex items-center justify-center p-4 pointer-events-none"
+                    >
+                        <div className="w-full max-w-[720px] h-[600px] bg-[#111215]/80 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-[0_24px_64px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden pointer-events-auto">
                             {/* Header */}
                             <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
                                 <div className="flex items-center gap-4">
@@ -156,7 +162,25 @@ export const LuffyChat: React.FC = () => {
                                                 : 'bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/10 text-white/90 rounded-tl-none backdrop-blur-sm'
                                                 }`}
                                         >
-                                            {msg.content}
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkGfm]}
+                                                components={{
+                                                    p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                                                    ul: ({ node, ...props }) => <ul className="list-disc ml-4 mb-2" {...props} />,
+                                                    ol: ({ node, ...props }) => <ol className="list-decimal ml-4 mb-2" {...props} />,
+                                                    li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                                                    strong: ({ node, ...props }) => <strong className="font-bold text-white" {...props} />,
+                                                    code: ({ node, inline, ...props }: any) => (
+                                                        inline
+                                                            ? <code className="bg-white/10 px-1.5 py-0.5 rounded text-[11px] font-mono text-[#FF7A29]" {...props} />
+                                                            : <div className="bg-black/30 p-3 rounded-lg my-3 overflow-x-auto border border-white/5">
+                                                                <code className="text-[11px] font-mono leading-relaxed" {...props} />
+                                                            </div>
+                                                    )
+                                                }}
+                                            >
+                                                {msg.content}
+                                            </ReactMarkdown>
                                         </div>
                                     </motion.div>
                                 ))}
@@ -214,8 +238,8 @@ export const LuffyChat: React.FC = () => {
                                     />
                                     <button
                                         onClick={handleSend}
-                                        disabled={!inputValue.trim() || isThinking}
-                                        className={`p-2 rounded-lg transition-all ${inputValue.trim() && !isThinking
+                                        disabled={!inputValue.trim() || isThinking || !isConnected}
+                                        className={`p-2 rounded-lg transition-all ${inputValue.trim() && !isThinking && isConnected
                                             ? 'bg-[#FF7A29] text-white shadow-[0_0_12px_rgba(255,122,41,0.4)]'
                                             : 'bg-white/5 text-white/20'
                                             }`}
@@ -224,8 +248,8 @@ export const LuffyChat: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                        </motion.div>
-                    </>
+                        </div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </>

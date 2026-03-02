@@ -1,47 +1,32 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { LuffyConnection, LuffyUnifiedEvent } from './luffyConnection';
-
-export interface ChatMessage {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-}
+import { useAgentStatusStore } from '../store/agentStatusStore';
+import { logAgentOp } from '../lib/agentOps';
+import { ChatMessage } from '../types';
 
 export const useLuffyChat = () => {
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const { luffySessionKey, luffyMessages: messages, addLuffyMessage } = useAgentStatusStore();
     const [isConnected, setIsConnected] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
-    const connectionRef = useRef<LuffyConnection | null>(null);
 
     useEffect(() => {
-        const conn = new LuffyConnection();
-        connectionRef.current = conn;
+        const conn = LuffyConnection.getInstance();
 
-        conn.onStatusChange = (status) => {
+        const handleStatus = (status: 'connecting' | 'connected' | 'disconnected') => {
             setIsConnected(status === 'connected');
         };
 
-        conn.onMessage = (event: LuffyUnifiedEvent) => {
+        const handleMessage = (event: LuffyUnifiedEvent) => {
             switch (event.type) {
                 case 'reply-start':
                     setIsThinking(true);
                     break;
-
-                case 'reply-chunk':
-                    // Chunks are now buffered in the connection layer
-                    break;
-
                 case 'reply':
-                    setMessages(prev => [
-                        ...prev,
-                        { id: crypto.randomUUID(), role: 'assistant', content: event.text }
-                    ]);
+                    addLuffyMessage({ id: crypto.randomUUID(), role: 'assistant', content: event.text });
                     break;
-
                 case 'reply-end':
                     setIsThinking(false);
                     break;
-
                 case 'error':
                     setIsThinking(false);
                     console.error('[Luffy] Protocol Error:', event.message);
@@ -49,28 +34,38 @@ export const useLuffyChat = () => {
             }
         };
 
-        conn.connect();
+        conn.addStatusListener(handleStatus);
+        conn.addListener(handleMessage);
+
+        if (luffySessionKey) {
+            conn.connect(luffySessionKey);
+        }
 
         return () => {
-            conn.disconnect();
+            conn.removeStatusListener(handleStatus);
+            conn.removeListener(handleMessage);
         };
-    }, []);
+    }, [luffySessionKey]);
 
-    const sendMessage = useCallback((text: string) => {
-        if (!text.trim() || !connectionRef.current) return;
+    const sendMessage = useCallback(async (text: string) => {
+        if (!text.trim()) return;
 
-        // Optimistic UI for user message
         const userMsg: ChatMessage = {
             id: crypto.randomUUID(),
             role: 'user',
             content: text
         };
-        setMessages(prev => [...prev, userMsg]);
-
-        // Send to WebSocket
-        connectionRef.current.sendMessage(text);
+        addLuffyMessage(userMsg);
         setIsThinking(true);
-    }, []);
+
+        try {
+            logAgentOp({ sender: 'User', recipient: 'Luffy', message_summary: text });
+            LuffyConnection.getInstance().sendMessage(text);
+        } catch (e) {
+            console.error('[LuffyChat] Send error:', e);
+            setIsThinking(false);
+        }
+    }, [addLuffyMessage]);
 
     return {
         messages,

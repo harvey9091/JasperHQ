@@ -55,24 +55,28 @@ export const Settings: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
-    // Load profile from Supabase settings table
     useEffect(() => {
-        supabase.from('settings').select('value').eq('key', 'profile').eq('user_id', 'default')
+        supabase.from('settings').select('value').eq('key', 'profile')
             .maybeSingle().then(({ data }) => {
                 if (data?.value) {
-                    const v = data.value as Record<string, string>;
-                    if (v.name) setName(v.name);
-                    if (v.email) setEmail(v.email);
-                    if (v.phone) setPhone(v.phone);
+                    try {
+                        const v = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+                        if (v.name) setName(v.name);
+                        if (v.email) setEmail(v.email);
+                        if (v.phone) setPhone(v.phone);
+                    } catch (e) {
+                        console.error('[Settings] Failed to parse profile data:', e);
+                    }
                 }
             });
     }, []);
 
     const saveProfile = async () => {
         setSaving(true); setSaved(false);
+        const value = JSON.stringify({ name, email, phone });
         await supabase.from('settings').upsert(
-            { user_id: 'default', key: 'profile', value: { name, email, phone } },
-            { onConflict: 'user_id,key' }
+            { key: 'profile', value },
+            { onConflict: 'key' }
         );
         setSaving(false); setSaved(true);
         setTimeout(() => setSaved(false), 2200);

@@ -11,6 +11,7 @@ import SanjiImg from "@/Assets/sanji.png";
 import BrookImg from "@/Assets/brook.png";
 import UsoppImg from "@/Assets/usopp.png";
 import { AgentAvatar } from '../components/common/AgentAvatar';
+import { useAgentStatusStore } from '../store/agentStatusStore';
 
 const H = 'JetBrains Mono, monospace';
 const BD = 'Inter, sans-serif';
@@ -24,6 +25,7 @@ const AGENT_DEFS = [
     { id: 'AGT-004', name: 'Zoro', role: 'Security & Enforcement' },
     { id: 'AGT-005', name: 'Brook', role: 'Pipeline Logic' },
     { id: 'AGT-006', name: 'Usopp', role: 'Outreach & Comms' },
+    { id: 'AGT-000', name: 'Main', role: 'Core Kernel Process' },
     { id: 'AGT-007', name: 'Luffy', role: 'System Orchestrator' },
 ];
 
@@ -85,10 +87,10 @@ const relTime = (iso: string) => {
 
 // ─── AgentNetworkCanvas ────────────────────────────────────────────────────────
 const AgentNetworkCanvas: React.FC<{ agents: AgentLive[] }> = ({ agents }) => {
+    const isAgentActive = useAgentStatusStore(state => state.isAgentActive);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animRef = useRef<number>(0);
     const timeRef = useRef<number>(0);
-    const isActive = (s: AgentLive['status']) => s === 'ACTIVE' || s === 'RUNNING';
 
     const W = 900, H_CVS = 320;
     const ARC_X = 30, ARC_CY = H_CVS / 2, ARC_R = 98;
@@ -115,10 +117,9 @@ const AgentNetworkCanvas: React.FC<{ agents: AgentLive[] }> = ({ agents }) => {
     // Update wave speed when agents change
     useEffect(() => {
         AGENT_DEFS.forEach((def, i) => {
-            const a = agents.find(a => a.name === def.name);
-            wavesRef.current[i].speed = a && isActive(a.status) ? 0.32 : 0.15;
+            wavesRef.current[i].speed = isAgentActive(def.name) ? 0.32 : 0.15;
         });
-    }, [agents]);
+    }, [agents, isAgentActive]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -174,8 +175,7 @@ const AgentNetworkCanvas: React.FC<{ agents: AgentLive[] }> = ({ agents }) => {
             ];
 
             AGENT_DEFS.forEach((def, i) => {
-                const agent = agents.find(a => a.name === def.name);
-                const active = agent ? isActive(agent.status) : false;
+                const active = isAgentActive(def.name);
                 const { bx, by } = SCATTER[i] ?? { bx: 520 + (i % COLS) * 160, by: 40 + Math.floor(i / COLS) * 80 };
                 const targetY = by + BOX_H / 2;
                 const emitAngle = -Math.PI / 2 + (Math.PI * (i + 0.5)) / AGENT_DEFS.length;
@@ -238,54 +238,66 @@ const SCATTER_POS = [
     { lPct: '61%', top: 270 },
 ];
 
-const AgentBoxes: React.FC<{ agents: AgentLive[] }> = ({ agents }) => (
-    <>
-        {AGENT_DEFS.map((def, i) => {
-            const agent = agents.find(a => a.name === def.name);
-            const status = agent?.status ?? 'OFFLINE';
-            const cfg = ST[status];
-            const active = status === 'ACTIVE' || status === 'RUNNING';
-            const pos = SCATTER_POS[i] ?? { lPct: '60%', top: 40 + i * 46 };
-            const floatAmp = 2.5 + (i % 3) * 0.8;
-            const floatDur = 2.8 + (i % 4) * 0.5;
-            return (
-                <motion.div key={def.id}
-                    initial={{ opacity: 0, x: 16 }}
-                    animate={{ opacity: 1, x: 0, y: [0, -floatAmp, 0, floatAmp, 0] }}
-                    transition={{
-                        opacity: { delay: 0.15 + i * 0.07, duration: 0.4 },
-                        x: { delay: 0.15 + i * 0.07, duration: 0.4 },
-                        y: { delay: i * 0.1, duration: floatDur, repeat: Infinity, ease: 'easeInOut' },
-                    }}
-                    whileHover={{ boxShadow: active ? '0 0 22px rgba(255,122,41,0.28)' : '0 0 12px rgba(255,255,255,0.05)' }}
-                    style={{
-                        position: 'absolute', left: pos.lPct, top: pos.top, width: 120,
-                        display: 'flex', alignItems: 'center', gap: 7, padding: '6px 10px', borderRadius: 9,
-                        background: active ? 'linear-gradient(135deg,rgba(255,122,41,0.08),rgba(22,24,28,0.96))' : 'rgba(18,20,23,0.9)',
-                        border: `1px solid ${active ? 'rgba(255,122,41,0.32)' : 'rgba(255,255,255,0.06)'}`,
-                        boxShadow: active ? '0 0 12px rgba(255,122,41,0.10),inset 0 1px 0 rgba(255,255,255,0.04)' : 'inset 0 1px 0 rgba(255,255,255,0.03)',
-                        backdropFilter: 'blur(10px)', overflow: 'hidden', cursor: 'default',
-                    }}>
-                    {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,rgba(255,122,41,0.7),rgba(255,122,41,0.2),transparent)' }} />}
-                    <div style={{ width: 20, height: 20, borderRadius: 6, background: `${cfg.color}18`, border: `1px solid ${cfg.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Cpu size={10} style={{ color: cfg.color }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontFamily: H, fontSize: 9, fontWeight: 700, color: active ? '#FFF' : '#5A5F6A', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{def.name}</p>
-                        <p style={{ fontFamily: BD, fontSize: 8, color: '#3A3F4A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>{def.role}</p>
-                    </div>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.color, boxShadow: active ? `0 0 5px ${cfg.glow}` : undefined, flexShrink: 0 }} />
-                </motion.div>
-            );
-        })}
-    </>
-);
+const AgentBoxes: React.FC<{ agents: AgentLive[] }> = ({ agents }) => {
+    const isAgentActive = useAgentStatusStore(state => state.isAgentActive);
+
+    return (
+        <>
+            {AGENT_DEFS.map((def, i) => {
+                const agent = agents.find(a => a.name === def.name);
+                const status = agent?.status ?? 'OFFLINE';
+                const cfg = ST[status];
+                const active = isAgentActive(def.name);
+                const pos = SCATTER_POS[i] ?? { lPct: '60%', top: 40 + i * 46 };
+                const floatAmp = 2.5 + (i % 3) * 0.8;
+                const floatDur = 2.8 + (i % 4) * 0.5;
+                return (
+                    <motion.div key={def.id}
+                        initial={{ opacity: 0, x: 16 }}
+                        animate={{ opacity: 1, x: 0, y: [0, -floatAmp, 0, floatAmp, 0] }}
+                        transition={{
+                            opacity: { delay: 0.15 + i * 0.07, duration: 0.4 },
+                            x: { delay: 0.15 + i * 0.07, duration: 0.4 },
+                            y: { delay: i * 0.1, duration: floatDur, repeat: Infinity, ease: 'easeInOut' },
+                        }}
+                        whileHover={{ boxShadow: active ? '0 0 22px rgba(255,122,41,0.28)' : '0 0 12px rgba(255,255,255,0.05)' }}
+                        style={{
+                            position: 'absolute', left: pos.lPct, top: pos.top, width: 120,
+                            display: 'flex', alignItems: 'center', gap: 7, padding: '6px 10px', borderRadius: 9,
+                            background: active ? 'linear-gradient(135deg,rgba(255,122,41,0.08),rgba(22,24,28,0.96))' : 'rgba(18,20,23,0.9)',
+                            border: `1px solid ${active ? 'rgba(255,122,41,0.32)' : 'rgba(255,255,255,0.06)'}`,
+                            boxShadow: active ? '0 0 12px rgba(255,122,41,0.10),inset 0 1px 0 rgba(255,255,255,0.04)' : 'inset 0 1px 0 rgba(255,255,255,0.03)',
+                            backdropFilter: 'blur(10px)', overflow: 'hidden', cursor: 'default',
+                        }}>
+                        {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg,rgba(255,122,41,0.7),rgba(255,122,41,0.2),transparent)' }} />}
+                        <div style={{ width: 20, height: 20, borderRadius: 6, background: `${cfg.color}18`, border: `1px solid ${cfg.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Cpu size={10} style={{ color: cfg.color }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontFamily: H, fontSize: 9, fontWeight: 700, color: active ? '#FFF' : '#5A5F6A', letterSpacing: '0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{def.name}</p>
+                            <p style={{ fontFamily: BD, fontSize: 8, color: '#3A3F4A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 1 }}>{def.role}</p>
+                        </div>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: cfg.color, boxShadow: active ? `0 0 5px ${cfg.glow}` : undefined, flexShrink: 0 }} />
+                    </motion.div>
+                );
+            })}
+        </>
+    );
+};
 
 // ─── Agent Card ───────────────────────────────────────────────────────────────
 const AgentCard: React.FC<{ agent: AgentLive; i: number }> = ({ agent, i }) => {
+    const isAgentActive = useAgentStatusStore(state => state.isAgentActive(agent.name));
+    const setLuffyChatOpen = useAgentStatusStore(state => state.setLuffyChatOpen);
     const cfg = ST[agent.status];
-    const running = agent.status === 'RUNNING';
+    const running = agent.status === 'RUNNING' || isAgentActive;
     const avatarSrc = AGENT_IMAGES[agent.name] || AGENT_IMAGES['Luffy'];
+
+    const handleChatRequest = () => {
+        if (agent.name === 'Luffy') {
+            setLuffyChatOpen(true);
+        }
+    };
 
     return (
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07, duration: 0.4 }}
@@ -294,7 +306,7 @@ const AgentCard: React.FC<{ agent: AgentLive; i: number }> = ({ agent, i }) => {
 
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 14 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                    <AgentAvatar src={avatarSrc} alt={agent.name} size={48} />
+                    <AgentAvatar src={avatarSrc} alt={agent.name} size={48} glow={running} />
                     <span style={{ fontFamily: MN, fontSize: 8, color: '#FFF', opacity: 0.3, letterSpacing: '0.05em' }}>{agent.name.toUpperCase()}</span>
                 </div>
 
@@ -342,6 +354,7 @@ const AgentCard: React.FC<{ agent: AgentLive; i: number }> = ({ agent, i }) => {
                     <Play size={10} />RUN NOW
                 </motion.button>
                 <motion.button whileHover={{ borderColor: 'rgba(255,255,255,0.1)', color: '#E2E4E9' }} whileTap={{ scale: 0.96 }}
+                    onClick={handleChatRequest}
                     style={{ padding: '7px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#4A4F5A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                     <Terminal size={11} />
                 </motion.button>
@@ -363,27 +376,34 @@ export const Agents: React.FC = () => {
         // 1. Fetch real agents from OpenClaw
         let apiAgents: any[] = [];
         try {
-            const baseUrl = import.meta.env.VITE_OPENCLAW_BASE_URL || 'http://127.0.0.1:18789';
-            const res = await fetch(`${baseUrl}/agent/list`);
-            const data = await res.json();
-            apiAgents = Array.isArray(data) ? data : (data.agents || []);
+            const token = import.meta.env.VITE_OPENCLAW_TOKEN;
+            const res = await fetch('/api/agents', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const text = await res.text();
+                if (!text.trim().startsWith('<!DOCTYPE') && !text.includes('<html')) {
+                    const data = JSON.parse(text);
+                    apiAgents = Array.isArray(data) ? data : (data.agents || []);
+                }
+            }
         } catch (err) {
-            console.error('Failed to fetch agent list:', err);
+            console.error('[Agents] Failed to fetch agent list:', err);
         }
 
-        // 2. Fetch latest monitor_logs per agent
+        // 2. Fetch latest logs per agent
         const { data: logData } = await supabase
-            .from('monitor_logs')
+            .from('agent_operations_log')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(200);
 
         // Build agent map — latest row per agent name
-        const agentMap = new Map<string, MonitorLog>();
+        const agentMap = new Map<string, any>();
         if (logData) {
-            for (const row of logData as MonitorLog[]) {
-                if (row.agent && !agentMap.has(row.agent)) {
-                    agentMap.set(row.agent, row);
+            for (const row of logData as any[]) {
+                if (row.sender && !agentMap.has(row.sender)) {
+                    agentMap.set(row.sender, row);
                 }
             }
         }
@@ -394,44 +414,26 @@ export const Agents: React.FC = () => {
 
             return {
                 ...def,
-                status: resolveStatus(apiAgent?.status || log?.status),
+                status: resolveStatus(apiAgent?.status || (log ? 'ACTIVE' : null)),
                 mode: (apiAgent?.mode || 'AUTONOMOUS').toUpperCase(),
-                efficiency: apiAgent?.efficiency ?? log?.efficiency ?? 95,
-                tasks: apiAgent?.tasks_completed ?? log?.tasks_count ?? 0,
+                efficiency: apiAgent?.efficiency ?? 95,
+                tasks: apiAgent?.tasks_completed ?? 0,
                 lastRun: apiAgent?.last_run ? relTime(apiAgent.last_run) : (log ? relTime(log.created_at) : 'Never'),
-                success: apiAgent?.tasks_completed ?? log?.tasks_count ?? 0,
-                failures: apiAgent?.failures ?? log?.failures ?? 0,
+                success: apiAgent?.tasks_completed ?? 0,
+                failures: apiAgent?.failures ?? 0,
             };
         });
         setAgents(builtAgents);
 
-        // --- Cron jobs from monitor_logs schedule rows ---
-        const { data: cronData } = await supabase
-            .from('monitor_logs')
-            .select('agent, schedule, next_run, status')
-            .not('schedule', 'is', null)
-            .order('next_run', { ascending: true })
-            .limit(6);
-
-        if (cronData && cronData.length > 0) {
-            setCrons(cronData.map((r: { agent?: string | null; schedule?: string | null; next_run?: string | null; status?: string | null }) => ({
-                name: `${r.agent ?? '–'} Job`,
-                schedule: r.schedule ?? '–',
-                next: r.next_run ? relTime(r.next_run) : '–',
-                agent: r.agent ?? '–',
-                status: r.status ?? 'Scheduled',
-            })));
-        } else {
-            // Fallback static cron data if table has no schedule rows yet
-            setCrons([
-                { name: 'Lead Harvest', schedule: '0 */2 * * *', next: 'in 38m', agent: 'Nami', status: 'Scheduled' },
-                { name: 'Outreach Blast', schedule: '0 9 * * 1-5', next: 'Tomorrow', agent: 'Usopp', status: 'Scheduled' },
-                { name: 'CRM Sync', schedule: '*/15 * * * *', next: 'in 12m', agent: 'Brook', status: 'Running' },
-                { name: 'Report Compile', schedule: '0 20 * * *', next: 'in 6h', agent: 'Luffy', status: 'Scheduled' },
-                { name: 'Data Cleanup', schedule: '0 3 * * 0', next: 'in 5d', agent: 'Zoro', status: 'Paused' },
-                { name: 'Deal Follow-up', schedule: '0 10 * * 1,3,5', next: 'in 22h', agent: 'Sanji', status: 'Scheduled' },
-            ]);
-        }
+        // Fallback static cron data
+        setCrons([
+            { name: 'Lead Harvest', schedule: '0 */2 * * *', next: 'in 38m', agent: 'Nami', status: 'Scheduled' },
+            { name: 'Outreach Blast', schedule: '0 9 * * 1-5', next: 'Tomorrow', agent: 'Usopp', status: 'Scheduled' },
+            { name: 'CRM Sync', schedule: '*/15 * * * *', next: 'in 12m', agent: 'Brook', status: 'Running' },
+            { name: 'Report Compile', schedule: '0 20 * * *', next: 'in 6h', agent: 'Luffy', status: 'Scheduled' },
+            { name: 'Data Cleanup', schedule: '0 3 * * 0', next: 'in 5d', agent: 'Zoro', status: 'Paused' },
+            { name: 'Deal Follow-up', schedule: '0 10 * * 1,3,5', next: 'in 22h', agent: 'Sanji', status: 'Scheduled' },
+        ]);
 
         setLoading(false);
     }, []);
@@ -440,7 +442,7 @@ export const Agents: React.FC = () => {
         fetchData();
         const channel = supabase
             .channel('agents_rt')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'monitor_logs' }, fetchData)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_operations_log' }, fetchData)
             .subscribe();
         return () => { supabase.removeChannel(channel); };
     }, [fetchData]);
@@ -505,16 +507,34 @@ const AgentCommsDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
     const [logs, setLogs] = useState<OpsLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const isAgentActive = useAgentStatusStore(state => state.isAgentActive);
 
     const fetchLogs = async () => {
+        const VALID_AGENTS = ['Luffy', 'Zoro', 'Nami', 'Sanji', 'Robin', 'Brook', 'Usopp', 'Main'];
+        const NOISE = ['rpc', 'init', 'handshake', 'heartbeat', 'setup', 'orchestrat'];
+
         const { data } = await supabase
             .from('agent_operations_log')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(30);
+            .limit(50);
+
         if (data) {
-            // Reverse logs for chat style (newest at bottom)
-            setLogs([...data].reverse());
+            // Strict filtering for Agent -> Agent only
+            const filtered = data.filter((log: any) => {
+                const s = log.sender || '';
+                const r = log.recipient || '';
+                const m = (log.message_summary || '').toLowerCase();
+
+                const isAgentToAgent = VALID_AGENTS.includes(s) && VALID_AGENTS.includes(r);
+                const isNotUserOrSystem = s !== 'User' && s !== 'System' && r !== 'User' && r !== 'System';
+                const isNotNoise = !NOISE.some(n => m.includes(n));
+
+                return isAgentToAgent && isNotUserOrSystem && isNotNoise;
+            });
+
+            // Reverse for chat style
+            setLogs([...filtered].reverse());
         }
         setLoading(false);
     };
@@ -522,10 +542,12 @@ const AgentCommsDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
     useEffect(() => {
         if (isOpen) {
             fetchLogs();
-            const interval = setInterval(fetchLogs, 45000);
+            const interval = setInterval(fetchLogs, 15000);
             const channel = supabase
                 .channel('agent_ops_rt_drawer')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'agent_operations_log' }, fetchLogs)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'agent_operations_log' }, () => {
+                    fetchLogs();
+                })
                 .subscribe();
             return () => {
                 clearInterval(interval);
@@ -543,78 +565,134 @@ const AgentCommsDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ 
     return (
         <AnimatePresence>
             {isOpen && (
-                <>
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 10000 }}
-                    />
+                <motion.div
+                    key="comms-backdrop"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+                />
+            )}
 
-                    {/* Drawer */}
-                    <motion.div
-                        initial={{ x: '100%' }}
-                        animate={{ x: 0 }}
-                        exit={{ x: '100%' }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        style={{ position: 'fixed', top: 0, right: 0, width: 'min(35%, 500px)', height: '100%', background: '#0D0E10', borderLeft: '1px solid rgba(255,255,255,0.06)', boxShadow: '-20px 0 50px rgba(0,0,0,0.5)', zIndex: 10001, display: 'flex', flexDirection: 'column' }}
-                    >
-                        {/* Header */}
-                        <div style={{ padding: '24px 28px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {isOpen && (
+                <motion.div
+                    key="comms-drawer"
+                    initial={{ x: '100%' }}
+                    animate={{ x: 0 }}
+                    exit={{ x: '100%' }}
+                    transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                    style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(100%, 460px)', zIndex: 9999, background: 'linear-gradient(145deg, #111215, #181A1D)', borderLeft: '1px solid rgba(255,122,41,0.2)', boxShadow: '-20px 0 60px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column' }}
+                >
+                    {/* Header Section */}
+                    <div style={{ padding: '24px 28px 12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                             <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4BE77F', boxShadow: '0 0 10px #4BE77F' }} />
-                                    <h2 style={{ fontFamily: H, fontSize: 13, fontWeight: 900, color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inter-Agent Communications</h2>
+                                    <Activity size={12} style={{ color: '#FF7A29' }} />
+                                    <h2 style={{ fontFamily: H, fontSize: 13, fontWeight: 900, color: '#FFF', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Agent Comms Stream</h2>
                                 </div>
-                                <p style={{ fontFamily: MN, fontSize: 9, color: '#4A4F5A', letterSpacing: '0.1em' }}>LIVE MONITORING ACTIVE</p>
+                                <p style={{ fontFamily: MN, fontSize: 8, color: '#3A3F4A', letterSpacing: '0.12em' }}>ENCRYPTED PROTOCOL ACTIVE</p>
                             </div>
-                            <motion.button
-                                whileHover={{ background: 'rgba(255,255,255,0.05)', color: '#FFF' }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={onClose}
-                                style={{ width: 32, height: 32, borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#7A7F8A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            >
-                                <X size={16} />
+                            <motion.button whileHover={{ background: 'rgba(255,255,255,0.05)' }} whileTap={{ scale: 0.9 }} onClick={onClose}
+                                style={{ width: 28, height: 28, borderRadius: 6, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#4A4F5A', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <X size={14} />
                             </motion.button>
                         </div>
 
-                        {/* Logs Content */}
-                        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                            {loading && logs.length === 0 ? (
-                                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Loader2 size={18} style={{ color: '#FF7A29', animation: 'spin 1s linear infinite' }} />
-                                </div>
-                            ) : logs.length === 0 ? (
-                                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                    <p style={{ fontFamily: MN, fontSize: 10, color: '#3A3F4A', letterSpacing: '0.12em', textAlign: 'center' }}>NO RECENT AGENT COMMUNICATIONS</p>
-                                </div>
-                            ) : (
-                                logs.map((log) => (
-                                    <div key={log.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                <span style={{ fontFamily: BD, fontSize: 11, fontWeight: 700, color: '#FF7A29' }}>{log.sender}</span>
-                                                <ArrowRight size={10} style={{ color: '#3A3F4A' }} />
-                                                <span style={{ fontFamily: BD, fontSize: 11, fontWeight: 700, color: '#7A9FFF' }}>{log.recipient}</span>
-                                            </div>
-                                            <span style={{ fontFamily: MN, fontSize: 9, color: '#3A3F4A' }}>{new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        {/* 1. TOP AVATAR STRIP */}
+                        <div style={{ display: 'flex', gap: 10, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                            {AGENT_DEFS.filter(a => a.name !== 'Main').map(agent => {
+                                const active = isAgentActive(agent.name);
+                                return (
+                                    <div key={agent.id} style={{ position: 'relative', flexShrink: 0 }}>
+                                        <div style={{
+                                            width: 40, height: 40, borderRadius: '50%', padding: 2,
+                                            border: `2px solid ${active ? '#FF7A29' : 'transparent'}`,
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        }}>
+                                            <img
+                                                src={AGENT_IMAGES[agent.name]}
+                                                alt={agent.name}
+                                                style={{
+                                                    width: '100%', height: '100%', borderRadius: '50%',
+                                                    filter: active ? 'none' : 'grayscale(100%) brightness(0.4)',
+                                                    opacity: active ? 1 : 0.6
+                                                }}
+                                            />
                                         </div>
-                                        <div style={{ padding: '12px 14px', borderRadius: '4px 14px 14px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', position: 'relative' }}>
-                                            <p style={{ fontFamily: BD, fontSize: 12, color: '#B4B7BD', lineHeight: 1.5 }}>{log.message_summary}</p>
-                                        </div>
+                                        {active && (
+                                            <div style={{
+                                                position: 'absolute', bottom: 2, right: 2, width: 10, height: 10,
+                                                borderRadius: '50%', background: '#4BE77F', border: '2px solid #0D0E10',
+                                                boxShadow: '0 0 8px #4BE77F'
+                                            }} />
+                                        )}
                                     </div>
-                                ))
-                            )}
+                                );
+                            })}
                         </div>
+                    </div>
 
-                        {/* Footer / Status */}
-                        <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.1)' }}>
-                            <p style={{ fontFamily: MN, fontSize: 8, color: '#3A3F4A', letterSpacing: '0.08em', textAlign: 'center' }}>ENCRYPTED AGENT LINK // CHANNEL: OPS_LOG_01</p>
+                    {/* Logs Content */}
+                    <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        {loading && logs.length === 0 ? (
+                            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                <Loader2 size={24} style={{ color: '#FF7A29', animation: 'spin 1.5s linear infinite' }} />
+                            </div>
+                        ) : logs.length === 0 ? (
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', opacity: 0.3, gap: 12 }}>
+                                <MessageSquare size={32} />
+                                <p style={{ fontFamily: MN, fontSize: 9, letterSpacing: '0.2em', textAlign: 'center' }}>NO INTER-AGENT TRAFFIC</p>
+                            </div>
+                        ) : (
+                            logs.map((log) => (
+                                <div key={log.id} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    {/* 5. UI FORMAT: Avatars + Arrow */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <div style={{ position: 'relative' }}>
+                                            <img src={AGENT_IMAGES[log.sender] || LuffyImg} style={{ width: 24, height: 24, borderRadius: '50%', border: '1px solid rgba(255,122,41,0.3)' }} />
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, opacity: 0.5 }}>
+                                            <span style={{ fontFamily: MN, fontSize: 8, fontWeight: 700, color: '#FFF' }}>{log.sender.toUpperCase()}</span>
+                                            <ArrowRight size={10} style={{ color: '#FF7A29' }} />
+                                            <span style={{ fontFamily: MN, fontSize: 8, fontWeight: 700, color: '#FFF' }}>{log.recipient.toUpperCase()}</span>
+                                        </div>
+
+                                        <div style={{ position: 'relative' }}>
+                                            <img src={AGENT_IMAGES[log.recipient] || LuffyImg} style={{ width: 24, height: 24, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                        </div>
+
+                                        <div style={{ flex: 1 }} />
+                                        <span style={{ fontFamily: MN, fontSize: 9, color: '#3A3F4A' }}>
+                                            {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+
+                                    <div style={{
+                                        padding: '12px 16px', borderRadius: '4px 16px 16px 16px',
+                                        background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2))',
+                                        border: '1px solid rgba(255,255,255,0.05)',
+                                        marginLeft: 36
+                                    }}>
+                                        <p style={{ fontFamily: BD, fontSize: 13, color: '#B4B7BD', lineHeight: 1.6, letterSpacing: '0.01em' }}>
+                                            {log.message_summary}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                            <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#4BE77F', animation: 'pulse 2s infinite' }} />
+                            <p style={{ fontFamily: MN, fontSize: 8, color: '#3A3F4A', letterSpacing: '0.15em' }}>CRYPTO-STREEM ACTIVE // LINK_STABLE</p>
                         </div>
-                    </motion.div>
-                </>
+                    </div>
+                </motion.div>
             )}
         </AnimatePresence>
     );

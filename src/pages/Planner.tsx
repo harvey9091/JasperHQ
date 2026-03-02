@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Video, Mail, Database, BookOpen, Cpu, Target, Dumbbell, RefreshCw, MessageSquare, Clock, X, Check, ChevronRight, Zap, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../components/ui/Toast';
+import { usePlannerStore, TimeBlock } from '../store/plannerStore';
+import { useAgentStatusStore } from '../store/agentStatusStore';
 
 const H = 'JetBrains Mono, monospace';
 const BD = 'Inter, sans-serif';
@@ -22,44 +24,40 @@ const PLANNER_ICON_MAP: Record<string, React.ReactNode> = {
     dumbbell: <Dumbbell size={14} />, message: <MessageSquare size={14} />,
 };
 
-interface TimeBlock {
-    time: string; label: string; description: string;
-    icon: React.ReactNode; color: string;
-    tag: string;
-}
+
 
 const FOCUS_PLANS: Record<string, TimeBlock[]> = {
     editing: [
-        { time: '8:00', label: 'Raw Footage Review', description: 'Screen and tag clips from yesterday\'s shoot.', icon: <Video size={14} />, color: '#FF7A29', tag: 'CREATIVE' },
-        { time: '10:00', label: 'Edit Session A', description: 'Primary edit on current project — cut to music.', icon: <Video size={14} />, color: '#FF7A29', tag: 'CREATIVE' },
-        { time: '12:00', label: 'Break + CRM Scan', description: 'Lunch. Quick 10-min CRM update.', icon: <Database size={14} />, color: '#4A4F5A', tag: 'ADMIN' },
-        { time: '14:00', label: 'Colour Grade', description: 'Grade scene 1–3 with your base LUT.', icon: <Video size={14} />, color: '#FF7A29', tag: 'CREATIVE' },
-        { time: '16:00', label: 'Audio Mix', description: 'Balance levels, add SFX layer, export stems.', icon: <Video size={14} />, color: '#FF7A29', tag: 'CREATIVE' },
-        { time: '18:00', label: 'Agent Monitoring', description: 'Check Spectre, Phantom status. Review overnight logs.', icon: <Cpu size={14} />, color: '#7A9FFF', tag: 'OPS' },
+        { time: '8:00', label: 'Raw Footage Review', description: 'Screen and tag clips from yesterday\'s shoot.', type: 'video', color: '#FF7A29', tag: 'CREATIVE' },
+        { time: '10:00', label: 'Edit Session A', description: 'Primary edit on current project — cut to music.', type: 'video', color: '#FF7A29', tag: 'CREATIVE' },
+        { time: '12:00', label: 'Break + CRM Scan', description: 'Lunch. Quick 10-min CRM update.', type: 'database', color: '#4A4F5A', tag: 'ADMIN' },
+        { time: '14:00', label: 'Colour Grade', description: 'Grade scene 1–3 with your base LUT.', type: 'video', color: '#FF7A29', tag: 'CREATIVE' },
+        { time: '16:00', label: 'Audio Mix', description: 'Balance levels, add SFX layer, export stems.', type: 'video', color: '#FF7A29', tag: 'CREATIVE' },
+        { time: '18:00', label: 'Agent Monitoring', description: 'Check Spectre, Phantom status. Review overnight logs.', type: 'cpu', color: '#7A9FFF', tag: 'OPS' },
     ],
     outreach: [
-        { time: '8:00', label: 'Lead Qualification', description: 'Score and filter new leads from Spectre\'s overnight run.', icon: <Target size={14} />, color: '#FF7A29', tag: 'SALES' },
-        { time: '10:00', label: 'Email Sequence Build', description: 'Draft 3 personalised outreach emails via Email Gen.', icon: <Mail size={14} />, color: '#FF7A29', tag: 'SALES' },
-        { time: '12:00', label: 'Break', description: 'Step away. Reset.', icon: <Dumbbell size={14} />, color: '#4A4F5A', tag: 'BREAK' },
-        { time: '14:00', label: 'Prospect Calls', description: 'Block 2h for live calls — only warm leads.', icon: <Target size={14} />, color: '#4BE77F', tag: 'SALES' },
-        { time: '16:00', label: 'CRM Deal Updates', description: 'Move deals to correct stages, add call notes.', icon: <Database size={14} />, color: '#7A9FFF', tag: 'ADMIN' },
-        { time: '18:00', label: 'Research Prep', description: 'Queue research for tomorrow\'s call leads.', icon: <BookOpen size={14} />, color: '#A78BFA', tag: 'OPS' },
+        { time: '8:00', label: 'Lead Qualification', description: 'Score and filter new leads from Spectre\'s overnight run.', type: 'target', color: '#FF7A29', tag: 'SALES' },
+        { time: '10:00', label: 'Email Sequence Build', description: 'Draft 3 personalised outreach emails via Email Gen.', type: 'mail', color: '#FF7A29', tag: 'SALES' },
+        { time: '12:00', label: 'Break', description: 'Step away. Reset.', type: 'dumbbell', color: '#4A4F5A', tag: 'BREAK' },
+        { time: '14:00', label: 'Prospect Calls', description: 'Block 2h for live calls — only warm leads.', type: 'target', color: '#4BE77F', tag: 'SALES' },
+        { time: '16:00', label: 'CRM Deal Updates', description: 'Move deals to correct stages, add call notes.', type: 'database', color: '#7A9FFF', tag: 'ADMIN' },
+        { time: '18:00', label: 'Research Prep', description: 'Queue research for tomorrow\'s call leads.', type: 'book', color: '#A78BFA', tag: 'OPS' },
     ],
     business: [
-        { time: '8:00', label: 'Morning Review', description: 'Check overnight analytics, revenue dashboard, agent logs.', icon: <Database size={14} />, color: '#7A9FFF', tag: 'STRATEGY' },
-        { time: '10:00', label: 'Strategic Planning', description: 'Review weekly OKRs. Update task priorities.', icon: <Target size={14} />, color: '#FF7A29', tag: 'STRATEGY' },
-        { time: '12:00', label: 'Team/Partner Calls', description: 'Block for external meetings and collab discussions.', icon: <MessageSquare size={14} />, color: '#A78BFA', tag: 'COMMS' },
-        { time: '14:00', label: 'Content Creation', description: 'Script or record one business content piece.', icon: <Video size={14} />, color: '#FF7A29', tag: 'CREATIVE' },
-        { time: '16:00', label: 'Finance & Admin', description: 'Invoice review, expenses, Stripe reconcile.', icon: <Database size={14} />, color: '#4A4F5A', tag: 'ADMIN' },
-        { time: '18:00', label: 'End-of-Day Systems Check', description: 'Agent ops, scheduled crons, pending deals review.', icon: <Cpu size={14} />, color: '#7A9FFF', tag: 'OPS' },
+        { time: '8:00', label: 'Morning Review', description: 'Check overnight analytics, revenue dashboard, agent logs.', type: 'database', color: '#7A9FFF', tag: 'STRATEGY' },
+        { time: '10:00', label: 'Strategic Planning', description: 'Review weekly OKRs. Update task priorities.', type: 'target', color: '#FF7A29', tag: 'STRATEGY' },
+        { time: '12:00', label: 'Team/Partner Calls', description: 'Block for external meetings and collab discussions.', type: 'message', color: '#A78BFA', tag: 'COMMS' },
+        { time: '14:00', label: 'Content Creation', description: 'Script or record one business content piece.', type: 'video', color: '#FF7A29', tag: 'CREATIVE' },
+        { time: '16:00', label: 'Finance & Admin', description: 'Invoice review, expenses, Stripe reconcile.', type: 'database', color: '#4A4F5A', tag: 'ADMIN' },
+        { time: '18:00', label: 'End-of-Day Systems Check', description: 'Agent ops, scheduled crons, pending deals review.', type: 'cpu', color: '#7A9FFF', tag: 'OPS' },
     ],
     fitness: [
-        { time: '8:00', label: 'Morning Workout', description: 'Strength or cardio block — non-negotiable.', icon: <Dumbbell size={14} />, color: '#4BE77F', tag: 'FITNESS' },
-        { time: '10:00', label: 'Deep Work Session', description: 'Primary project focus — no meetings, no Slack.', icon: <Target size={14} />, color: '#FF7A29', tag: 'FOCUS' },
-        { time: '12:00', label: 'Nutrition Break', description: 'Meal prep, eat well. 30-min walk optional.', icon: <Dumbbell size={14} />, color: '#4BE77F', tag: 'HEALTH' },
-        { time: '14:00', label: 'Comms & Outreach', description: 'Emails, calls, CRM updates in a contained block.', icon: <Mail size={14} />, color: '#FF7A29', tag: 'SALES' },
-        { time: '16:00', label: 'Skills / Learning', description: 'Read, course, or skill-building — 45 min minimum.', icon: <BookOpen size={14} />, color: '#A78BFA', tag: 'GROWTH' },
-        { time: '18:00', label: 'Agent Review + Wind Down', description: 'Ops check. Journal. Plan tomorrow. Disconnect by 7PM.', icon: <Cpu size={14} />, color: '#7A9FFF', tag: 'OPS' },
+        { time: '8:00', label: 'Morning Workout', description: 'Strength or cardio block — non-negotiable.', type: 'dumbbell', color: '#4BE77F', tag: 'FITNESS' },
+        { time: '10:00', label: 'Deep Work Session', description: 'Primary project focus — no meetings, no Slack.', type: 'target', color: '#FF7A29', tag: 'FOCUS' },
+        { time: '12:00', label: 'Nutrition Break', description: 'Meal prep, eat well. 30-min walk optional.', type: 'dumbbell', color: '#4BE77F', tag: 'HEALTH' },
+        { time: '14:00', label: 'Comms & Outreach', description: 'Emails, calls, CRM updates in a contained block.', type: 'mail', color: '#FF7A29', tag: 'SALES' },
+        { time: '16:00', label: 'Skills / Learning', description: 'Read, course, or skill-building — 45 min minimum.', type: 'book', color: '#A78BFA', tag: 'GROWTH' },
+        { time: '18:00', label: 'Agent Review + Wind Down', description: 'Ops check. Journal. Plan tomorrow. Disconnect by 7PM.', type: 'cpu', color: '#7A9FFF', tag: 'OPS' },
     ],
 };
 
@@ -122,6 +120,8 @@ const RegenModal: React.FC<{ current: Focus; onSelect: (f: Focus) => void; onClo
 // ─── PLANNER PAGE ─────────────────────────────────────────────────────────────
 export const Planner: React.FC = () => {
     const toast = useToast();
+    const { plan: storePlan, notes: storeNotes, isGenerating, setPlan, setNotes, setIsGenerating } = usePlannerStore();
+    const { statuses } = useAgentStatusStore();
     const [focus, setFocus] = useState<Focus>('editing');
     const [modal, setModal] = useState(false);
     const [showDiscordToast, setShowDiscordToast] = useState(false);
@@ -129,7 +129,6 @@ export const Planner: React.FC = () => {
     const [liveCrons, setLiveCrons] = useState<typeof CRON_TRIGGERS | null>(null);
     const [loading, setLoading] = useState(false);
     const [prompt, setPrompt] = useState('');
-    const [generating, setGenerating] = useState(false);
 
     const fetchTasks = useCallback(async (currentFocus: Focus) => {
         setLoading(true);
@@ -144,16 +143,16 @@ export const Planner: React.FC = () => {
             .order('time', { ascending: true });
 
         // Fallback: fetch by focus only (any date)
-        const { data: byFocus } = byDateFocus && byDateFocus.length > 0
+        const { data: byFocus } = (byDateFocus && byDateFocus.length > 0)
             ? { data: byDateFocus }
             : await supabase.from('tasks').select('*').eq('focus', currentFocus).order('time', { ascending: true });
 
         if (byFocus && byFocus.length > 0) {
-            const blocks: TimeBlock[] = byFocus.map((t: { time: string; label: string; description?: string | null; type?: string | null; color?: string | null; tag?: string | null }) => ({
+            const blocks: TimeBlock[] = byFocus.map((t: any) => ({
                 time: t.time ?? '–',
                 label: t.label ?? 'Task',
                 description: t.description ?? '',
-                icon: PLANNER_ICON_MAP[t.type ?? ''] ?? <Target size={14} />,
+                type: t.type ?? 'target',
                 color: t.color ?? '#FF7A29',
                 tag: t.tag ?? 'TASK',
             }));
@@ -162,20 +161,19 @@ export const Planner: React.FC = () => {
             setLivePlan(null); // triggers static fallback
         }
 
-        // Fetch upcoming crons from monitor_logs
-        const { data: cronData } = await supabase
-            .from('monitor_logs')
-            .select('agent, schedule, next_run, status')
-            .not('schedule', 'is', null)
-            .order('next_run', { ascending: true })
+        // Fetch recent operations from agent_operations_log (monitor_logs 404s)
+        const { data: logData } = await supabase
+            .from('agent_operations_log')
+            .select('sender, recipient, message_summary, created_at')
+            .order('created_at', { ascending: false })
             .limit(4);
 
-        if (cronData && cronData.length > 0) {
+        if (logData && logData.length > 0) {
             const CRON_COLORS = ['#FF7A29', '#4BE77F', '#7A9FFF', '#A78BFA'];
-            setLiveCrons(cronData.map((r: { agent?: string | null; schedule?: string | null; next_run?: string | null }, i: number) => ({
-                name: `${r.agent ?? '–'} Job`,
-                next: r.next_run ? new Date(r.next_run).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '–',
-                agent: r.agent ?? '–',
+            setLiveCrons(logData.map((r: any, i: number) => ({
+                name: r.message_summary || 'Operation',
+                next: r.created_at ? new Date(r.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '–',
+                agent: r.recipient || '–',
                 color: CRON_COLORS[i % CRON_COLORS.length],
             })));
         } else {
@@ -189,45 +187,62 @@ export const Planner: React.FC = () => {
 
     const handleGenerate = async () => {
         if (!prompt) return;
-        setGenerating(true);
+        setIsGenerating(true);
         try {
-            const baseUrl = import.meta.env.VITE_OPENCLAW_BASE_URL || 'http://127.0.0.1:18789';
-            const res = await fetch(`${baseUrl}/agent/planner`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt })
-            });
+            const luffySession = useAgentStatusStore.getState().luffySessionKey;
+            if (!luffySession) {
+                toast.error('Luffy session not ready');
+                setIsGenerating(false);
+                return;
+            }
 
-            if (!res.ok) throw new Error('API failed');
+            console.log(`[Planner] Triggering Luffy via RPC...`, { luffySession, prompt, focus });
 
-            const data = await res.json();
-            const taskData = data.tasks || data;
+            const { invokeAgentRpc } = await import('../lib/openclawRpc');
+            const data = await invokeAgentRpc(luffySession, `Generate a structured daily plan in JSON format for the focus "${focus}" based on this prompt: ${prompt}`);
 
-            if (Array.isArray(taskData)) {
-                const blocks: TimeBlock[] = taskData.map((t: any) => ({
+            console.log('[Planner] Agent response data:', data);
+            const rawOutput = data.output || data;
+            let finalData = rawOutput;
+
+            if (typeof rawOutput === 'string') {
+                try {
+                    finalData = JSON.parse(rawOutput);
+                } catch (e) {
+                    console.warn('Failed to parse agent output as JSON string', e);
+                }
+            }
+
+            const planItems = finalData.plan || finalData;
+            const notes = finalData.notes || '';
+
+            if (Array.isArray(planItems)) {
+                const blocks: TimeBlock[] = planItems.map((t: any) => ({
                     time: t.time ?? '–',
                     label: t.label ?? 'Task',
                     description: t.description ?? '',
-                    icon: PLANNER_ICON_MAP[t.type ?? ''] ?? <Target size={14} />,
+                    type: t.type ?? 'target',
                     color: t.color ?? '#FF7A29',
                     tag: t.tag ?? 'TASK',
                 }));
+                setPlan(blocks);
+                setNotes(notes);
                 setLivePlan(blocks);
-                toast.success('Schedule generated successfully');
+                toast.success('Schedule generated by Luffy');
             } else {
-                // Fallback to manual refresh if no tasks in response
-                setTimeout(() => fetchTasks(focus), 1500);
-                toast.success('Planning initiated...');
+                toast.error('Agent returned an invalid plan format');
             }
         } catch (err) {
-            toast.error('Failed to generate schedule');
+            console.error('[Planner] Generation error:', err);
+            toast.error('Failed to reach agent');
         } finally {
-            setGenerating(false);
+            setIsGenerating(false);
         }
     };
 
-    const plan = livePlan ?? [];
-    const crons = liveCrons ?? [];
+    const plan = storePlan.length > 0 ? storePlan : (livePlan ?? FOCUS_PLANS[focus] ?? []);
+    const crons = liveCrons ?? CRON_TRIGGERS;
+    const notes = storeNotes;
     const focusMeta = FOCUS_OPTIONS.find(f => f.key === focus)!;
 
     const sendDiscord = () => {
@@ -255,18 +270,33 @@ export const Planner: React.FC = () => {
                     </div>
                     <motion.button whileHover={{ boxShadow: '0 0 22px rgba(255,122,41,0.28)', borderColor: 'rgba(255,122,41,0.65)' }} whileTap={{ scale: 0.97 }}
                         onClick={handleGenerate}
-                        disabled={generating || !prompt}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: (generating || !prompt) ? 'default' : 'pointer', boxShadow: '0 0 12px rgba(255,122,41,0.1)', opacity: generating ? 0.6 : 1 }}>
-                        {generating ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={12} />}
+                        disabled={isGenerating || !prompt}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, background: 'linear-gradient(145deg,#1E2024,#151719)', border: '1px solid rgba(255,122,41,0.48)', color: '#FF7A29', fontFamily: H, fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', cursor: (isGenerating || !prompt) ? 'default' : 'pointer', boxShadow: '0 0 12px rgba(255,122,41,0.1)', opacity: isGenerating ? 0.6 : 1 }}>
+                        {isGenerating ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={12} />}
                         GENERATE PLAN
                     </motion.button>
                 </div>
             </div>
 
-            {/* Focus badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 99, background: `${focusMeta.color}0C`, border: `1px solid ${focusMeta.color}33`, alignSelf: 'flex-start' }}>
-                <div style={{ width: 7, height: 7, borderRadius: '50%', background: focusMeta.color, boxShadow: `0 0 8px ${focusMeta.color}` }} />
-                <span style={{ fontFamily: MN, fontSize: 9, color: focusMeta.color, letterSpacing: '0.16em', textTransform: 'uppercase' }}>Focus Mode · {focusMeta.label}</span>
+            {/* Focus badge & Notes */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignSelf: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 99, background: `${focusMeta.color}0C`, border: `1px solid ${focusMeta.color}33` }}>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: focusMeta.color, boxShadow: `0 0 8px ${focusMeta.color}` }} />
+                    <span style={{ fontFamily: MN, fontSize: 9, color: focusMeta.color, letterSpacing: '0.16em', textTransform: 'uppercase' }}>Focus Mode · {focusMeta.label}</span>
+                </div>
+
+                <AnimatePresence>
+                    {notes && (
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                            style={{ padding: '12px 18px', borderRadius: 12, background: 'rgba(255,122,41,0.05)', border: '1px solid rgba(255,122,41,0.15)', maxWidth: 600 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <MessageSquare size={12} style={{ color: '#FF7A29' }} />
+                                <span style={{ fontFamily: MN, fontSize: 9, color: '#FF7A29', letterSpacing: '0.1em', fontWeight: 700 }}>ZORO'S NOTES</span>
+                            </div>
+                            <p style={{ fontFamily: BD, fontSize: 13, color: '#D0D3DA', lineHeight: 1.5 }}>{notes}</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Main two-column layout */}
@@ -289,7 +319,7 @@ export const Planner: React.FC = () => {
                                     <span style={{ fontFamily: MN, fontSize: 10, color: '#3A3F4A', letterSpacing: '0.14em' }}>LOADING SCHEDULE…</span>
                                 </div>
                             ) : (
-                                <AnimatePresence mode="wait">
+                                <AnimatePresence>
                                     {plan.map((block, i) => (
                                         <motion.div key={`${focus}-${i}`}
                                             initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
@@ -304,7 +334,7 @@ export const Planner: React.FC = () => {
                                             {/* Content */}
                                             <div style={{ flex: 1, borderRadius: 14, padding: '12px 16px', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)', marginLeft: 4 }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                                                    <div style={{ color: block.color }}>{block.icon}</div>
+                                                    <div style={{ color: block.color }}>{PLANNER_ICON_MAP[block.type ?? ''] ?? <Target size={14} />}</div>
                                                     <p style={{ fontFamily: BD, fontSize: 13, fontWeight: 600, color: '#E2E4E9' }}>{block.label}</p>
                                                     <span style={{ marginLeft: 'auto', fontFamily: MN, fontSize: 8, letterSpacing: '0.14em', color: block.color, padding: '3px 8px', borderRadius: 99, background: `${block.color}10`, border: `1px solid ${block.color}28` }}>{block.tag}</span>
                                                 </div>
