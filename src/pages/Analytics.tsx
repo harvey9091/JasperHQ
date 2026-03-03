@@ -189,104 +189,59 @@ export const Analytics: React.FC = () => {
                 </Card>
             </div>
 
-            {/* Charts row 2: Radial + Heatmap */}
+            {/* System Signals & Forecast */}
             <div className="grid grid-cols-1 lg:grid-cols-7 gap-5">
-                {/* Radial agent efficiency */}
-                <Card className="lg:col-span-3" style={{ padding: 28, maxHeight: 300, overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                        <Activity size={13} style={{ color: '#FF7A29' }} />
-                        <span style={{ fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', color: '#FFF', textTransform: 'uppercase' }}>Agent Efficiency</span>
-                    </div>
-                    <svg viewBox="0 0 220 180" width="100%">
-                        {AGENTS_EFF.map((a, i) => {
-                            const r = 22 + i * 14; const cx = 110; const cy = 90;
-                            return (
-                                <g key={a.name}>
-                                    <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
-                                    <motion.path d={polarPath(a.pct, r, cx, cy)} fill="none" stroke={`rgba(255,${100 + i * 20},${41 + i * 10},${0.7 - i * 0.08})`} strokeWidth="4" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.2, delay: i * 0.12, ease: 'easeOut' }} />
-                                    <text x={cx + r + 6} y={cy - i * 16.5 + i * 16.5} style={{ fontFamily: MN, fontSize: 7, fill: '#7A7F8A' }}>{a.name} {a.pct}%</text>
-                                </g>
-                            );
-                        })}
-                        <text x={110} y={94} textAnchor="middle" style={{ fontFamily: H, fontSize: 8, fill: '#FF7A29' }}>EFFICIENCY</text>
-                    </svg>
-                </Card>
-
-                {/* Activity heatmap */}
-                <Card className="lg:col-span-4" style={{ padding: 28, maxHeight: 300, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                        <Activity size={13} style={{ color: '#FF7A29' }} />
-                        <span style={{ fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', color: '#FFF', textTransform: 'uppercase' }}>Activity Heatmap</span>
-                    </div>
-                    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: `auto repeat(${HOURS.length},1fr)`, gap: 3, flex: 1, overflow: 'hidden' }}>
-                            <div />
-                            {HOURS.map(h => <span key={h} style={{ fontFamily: MN, fontSize: 7, color: '#5A5F69', textAlign: 'center' }}>{h}</span>)}
-                            {DAYS.map((d, di) => (
-                                <React.Fragment key={d}>
-                                    <span style={{ fontFamily: MN, fontSize: 7, color: '#5A5F69', alignSelf: 'center', paddingRight: 6 }}>{d}</span>
-                                    {heatData[di].map((v, hi) => (
-                                        <motion.div key={hi} title={`${v}%`} initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: (di * 6 + hi) * 0.01 }}
-                                            style={{ aspectRatio: '1', borderRadius: 3, background: `rgba(255,122,41,${(v / 100) * 0.75 + 0.02})`, border: '1px solid rgba(255,122,41,0.06)' }} />
-                                    ))}
-                                </React.Fragment>
-                            ))}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
-                            <span style={{ fontFamily: MN, fontSize: 7, color: '#5A5F69' }}>Low</span>
-                            {[0.1, 0.2, 0.35, 0.5, 0.7, 0.9].map(o => <div key={o} style={{ flex: 1, height: 5, borderRadius: 2, background: `rgba(255,122,41,${o})` }} />)}
-                            <span style={{ fontFamily: MN, fontSize: 7, color: '#5A5F69' }}>High</span>
-                        </div>
-                    </div>
-                </Card>
-            </div>
-
-            {/* System Signals */}
-            <div className="grid grid-cols-1 lg:grid-cols-7 gap-5">
-                <Card className="lg:col-span-4" style={{ padding: 0, overflow: 'hidden', maxHeight: 340, display: 'flex', flexDirection: 'column' }}>
+                <Card className="lg:col-span-4" style={{ padding: 0, overflow: 'hidden', minHeight: 400, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <AlertTriangle size={13} style={{ color: '#FF7A29' }} />
                         <span style={{ fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', color: '#FFF', textTransform: 'uppercase' }}>System Signals</span>
                     </div>
-                    {loading && <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Loader2 size={18} style={{ color: '#3A3F4A', animation: 'spin 1s linear infinite' }} /></div>}
-                    {!loading && signals.length === 0 && <p style={{ fontFamily: BD, fontSize: 12, color: '#3A3F4A', padding: '20px 24px' }}>No signals yet. Add rows to analytics_events in Supabase.</p>}
-                    {signals.map((s, i) => {
-                        const isAlert = s.type === 'alert';
-                        const Icon = isAlert ? AlertTriangle : CheckCircle;
-                        const color = isAlert ? '#D95B16' : s.type === 'ok' ? '#4BE77F' : '#FF7A29';
-                        return (
-                            <React.Fragment key={s.id}>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 24px' }}>
-                                    <Icon size={13} style={{ color, flexShrink: 0, marginTop: 2 }} />
-                                    <div style={{ flex: 1 }}>
-                                        <p style={{ fontFamily: BD, fontSize: 12, color: '#E2E4E9', lineHeight: 1.5 }}>{s.message}</p>
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                        {loading && <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Loader2 size={18} style={{ color: '#3A3F4A', animation: 'spin 1s linear infinite' }} /></div>}
+                        {!loading && signals.length === 0 && <p style={{ fontFamily: BD, fontSize: 12, color: '#3A3F4A', padding: '20px 24px' }}>No signals yet. Add rows to analytics_events in Supabase.</p>}
+                        {signals.map((s, i) => {
+                            const isAlert = s.type === 'alert';
+                            const Icon = isAlert ? AlertTriangle : CheckCircle;
+                            const color = isAlert ? '#D95B16' : s.type === 'ok' ? '#4BE77F' : '#FF7A29';
+                            return (
+                                <React.Fragment key={s.id}>
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 24px' }}>
+                                        <Icon size={13} style={{ color, flexShrink: 0, marginTop: 2 }} />
+                                        <div style={{ flex: 1 }}>
+                                            <p style={{ fontFamily: BD, fontSize: 12, color: '#E2E4E9', lineHeight: 1.5 }}>{s.message}</p>
+                                        </div>
+                                        <span style={{ fontFamily: MN, fontSize: 9, color: '#4A4F5A', whiteSpace: 'nowrap' }}>{timeAgo(s.created_at)}</span>
                                     </div>
-                                    <span style={{ fontFamily: MN, fontSize: 9, color: '#4A4F5A', whiteSpace: 'nowrap' }}>{timeAgo(s.created_at)}</span>
-                                </div>
-                                {i < signals.length - 1 && <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent)', margin: '0 24px' }} />}
-                            </React.Fragment>
-                        );
-                    })}
+                                    {i < signals.length - 1 && <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent)', margin: '0 24px' }} />}
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
                 </Card>
 
                 {/* Forecast panel */}
-                <Card className="lg:col-span-3" style={{ padding: 28, height: 380, display: 'flex', flexDirection: 'column' }}>
+                <Card className="lg:col-span-3" style={{ padding: 28, display: 'flex', flexDirection: 'column', minHeight: 400 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
                         <TrendingUp size={13} style={{ color: '#FF7A29' }} />
                         <span style={{ fontFamily: H, fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', color: '#FFF', textTransform: 'uppercase' }}>Forecast</span>
                     </div>
-                    {[{ l: 'Projected Revenue', v: '$148k', note: 'Next 30d', c: '#FF7A29' }, { l: 'Projected Lead Volume', v: '62 leads', note: 'Next 14d', c: '#FF7A29' }, { l: 'Agent Saturation', v: '78%', note: 'Est. Q2', c: '#D4A017' }, { l: 'Churn Risk Score', v: 'LOW', note: '0.8%', c: '#4BE77F' }].map(({ l, v, note, c }) => (
-                        <div key={l} style={{ marginBottom: 20 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                                <span style={{ fontFamily: BD, fontSize: 11, color: '#5A5F69' }}>{l}</span>
-                                <span style={{ fontFamily: MN, fontSize: 8, color: '#3A3F4A' }}>{note}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, flex: 1 }}>
+                        {[{ l: 'Projected Revenue', v: '$148k', note: 'Next 30d', c: '#FF7A29' },
+                        { l: 'Projected Lead Volume', v: '62 leads', note: 'Next 14d', c: '#FF7A29' },
+                        { l: 'Agent Saturation', v: '78%', note: 'Est. Q2', c: '#D4A017' },
+                        { l: 'Churn Risk Score', v: 'LOW', note: '0.8%', c: '#4BE77F' }].map(({ l, v, note, c }) => (
+                            <div key={l}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                                    <span style={{ fontFamily: BD, fontSize: 11, color: '#5A5F69' }}>{l}</span>
+                                    <span style={{ fontFamily: MN, fontSize: 8, color: '#3A3F4A' }}>{note}</span>
+                                </div>
+                                <p style={{ fontFamily: BD, fontSize: 22, fontWeight: 800, color: c, letterSpacing: '-0.02em' }}>{v}</p>
+                                <div style={{ height: 2, borderRadius: 99, background: 'rgba(255,255,255,0.06)', marginTop: 8 }}>
+                                    <div style={{ height: '100%', width: '72%', borderRadius: 99, background: `linear-gradient(90deg,${c}44,${c})` }} />
+                                </div>
                             </div>
-                            <p style={{ fontFamily: BD, fontSize: 22, fontWeight: 800, color: c, letterSpacing: '-0.02em' }}>{v}</p>
-                            <div style={{ height: 2, borderRadius: 99, background: 'rgba(255,255,255,0.06)', marginTop: 8 }}>
-                                <div style={{ height: '100%', width: '72%', borderRadius: 99, background: `linear-gradient(90deg,${c}44,${c})` }} />
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </Card>
             </div>
         </div>
