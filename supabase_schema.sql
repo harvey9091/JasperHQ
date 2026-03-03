@@ -9,7 +9,8 @@ create table if not exists leads (
   status text default 'New', notes text,
   twitter text, linkedin text, website text,
   instagram text, facebook text, tiktok text,
-  last_action text, created_at timestamptz default now()
+  last_action text, crm_stage text default 'new',
+  created_at timestamptz default now()
 );
 
 -- crm_deals

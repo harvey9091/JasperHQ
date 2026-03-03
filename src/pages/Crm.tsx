@@ -107,7 +107,7 @@ const DealModal: React.FC<{
     const labelSt: React.CSSProperties = { fontFamily: MN, fontSize: 8, letterSpacing: '0.22em', color: '#7A7F8A', textTransform: 'uppercase', display: 'block', marginBottom: 5 };
 
     const handleSave = async () => {
-        if (!f.title || !f.company) { setErr('Title and company are required.'); return; }
+        if (!f.name || !f.company) { setErr('Name and company are required.'); return; }
         setSaving(true); setErr('');
         const payload = { ...f };
         let error;
@@ -141,8 +141,8 @@ const DealModal: React.FC<{
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                             <div style={{ gridColumn: '1/-1' }}>
-                                <label style={labelSt}>Deal Title *</label>
-                                <input value={f.title ?? ''} onChange={e => setF(p => ({ ...p, title: e.target.value }))} style={inputSt} />
+                                <label style={labelSt}>Lead Name *</label>
+                                <input value={f.name ?? ''} onChange={e => setF(p => ({ ...p, name: e.target.value }))} style={inputSt} />
                             </div>
                             <div>
                                 <label style={labelSt}>Company *</label>
@@ -189,7 +189,7 @@ const DealDetailDrawer: React.FC<{
     onClose: () => void;
     onEdit: () => void;
 }> = ({ deal, colTitle, onClose, onEdit }) => {
-    const col = COLUMNS.find(c => c.id === (deal as any).crm_stage);
+    const col = COLUMNS.find(c => c.id === deal.crm_stage);
     const scoreTag = deal.score && deal.score > 80 ? 'High' : deal.score && deal.score > 40 ? 'Medium' : 'Low';
     const tagC = TAG_COLORS[scoreTag] ?? TAG_COLORS.Medium;
     return (
@@ -206,7 +206,7 @@ const DealDetailDrawer: React.FC<{
                         <span style={{ fontFamily: MN, fontSize: 8, letterSpacing: '0.2em', color: col?.color ?? '#FF7A29', textTransform: 'uppercase' }}>{colTitle}</span>
                         <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#7A7F8A', cursor: 'pointer' }}><X size={15} /></button>
                     </div>
-                    <h2 style={{ fontFamily: H, fontSize: 18, fontWeight: 800, color: 'var(--text-primary,#FFF)', letterSpacing: '-0.3px', marginBottom: 8, lineHeight: 1.3 }}>{deal.title}</h2>
+                    <h2 style={{ fontFamily: H, fontSize: 18, fontWeight: 800, color: 'var(--text-primary,#FFF)', letterSpacing: '-0.3px', marginBottom: 8, lineHeight: 1.3 }}>{deal.name}</h2>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
                         <Building2 size={12} style={{ color: '#4A4F5A' }} />
                         <span style={{ fontFamily: BD, fontSize: 13, color: '#7A7F8A' }}>{deal.company}</span>
@@ -214,9 +214,9 @@ const DealDetailDrawer: React.FC<{
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
                         {[
                             { label: 'Deal Value', val: deal.value, color: '#4BE77F' },
-                            { label: 'Priority', val: deal.tag, color: tagC.text },
+                            { label: 'Priority', val: scoreTag, color: tagC.text },
                             { label: 'Stage', val: colTitle, color: col?.color ?? '#FF7A29' },
-                            { label: 'Added', val: deal.date ?? 'N/A', color: '#7A7F8A' },
+                            { label: 'Added', val: deal.created_at ? new Date(deal.created_at).toLocaleDateString() : 'N/A', color: '#7A7F8A' },
                         ].map(({ label, val, color }) => (
                             <div key={label} style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                 <p style={{ fontFamily: MN, fontSize: 8, letterSpacing: '0.18em', color: '#3A3F4A', textTransform: 'uppercase', marginBottom: 5 }}>{label}</p>
@@ -297,7 +297,7 @@ export const Crm: React.FC = () => {
     };
 
     const totalValue = leads.reduce((sum, l) => {
-        const n = parseFloat((l.value ?? '').replace(/[^0-9.]/g, ''));
+        const n = parseFloat(String(l.value ?? '').replace(/[^0-9.]/g, ''));
         return sum + (isNaN(n) ? 0 : n);
     }, 0);
 
@@ -339,7 +339,7 @@ export const Crm: React.FC = () => {
                     {COLUMNS.map(col => {
                         const colDeals = dealsInCol(col.id);
                         const colValue = colDeals.reduce((s, d) => {
-                            const n = parseFloat((d.value ?? '').replace(/[^0-9.]/g, ''));
+                            const n = parseFloat(String(d.value ?? '').replace(/[^0-9.]/g, ''));
                             return s + (isNaN(n) ? 0 : n);
                         }, 0);
                         return (
@@ -394,7 +394,7 @@ export const Crm: React.FC = () => {
                 {viewingDeal && !editingDeal && (
                     <DealDetailDrawer
                         deal={viewingDeal}
-                        colTitle={COLUMNS.find(c => c.id === viewingDeal.column_id)?.title ?? ''}
+                        colTitle={COLUMNS.find(c => c.id === viewingDeal.crm_stage)?.title ?? ''}
                         onClose={() => setViewingDeal(null)}
                         onEdit={() => { setEditingDeal(viewingDeal); setViewingDeal(null); }} />
                 )}

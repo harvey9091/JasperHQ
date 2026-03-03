@@ -31,6 +31,10 @@ export interface Lead {
   blog?: string;
   notes?: string;
   last_action?: string;
+  crm_stage?: string;
+  title?: string;
+  tag?: string;
+  date?: string;
   created_at?: string;
 }
 
