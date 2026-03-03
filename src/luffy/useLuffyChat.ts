@@ -67,10 +67,15 @@ export const useLuffyChat = () => {
         }
     }, [addLuffyMessage]);
 
+    const clearMessages = useCallback(() => {
+        useAgentStatusStore.getState().clearLuffyMessages();
+    }, []);
+
     return {
         messages,
         isThinking,
         isConnected,
-        sendMessage
+        sendMessage,
+        clearMessages
     };
 };

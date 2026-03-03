@@ -17,6 +17,7 @@ interface AgentStatusState {
     setLuffySessionKey: (key: string) => void;
     setLuffyChatOpen: (open: boolean) => void;
     addLuffyMessage: (msg: ChatMessage) => void;
+    clearLuffyMessages: () => void;
     isAgentActive: (name: string) => boolean;
 }
 
@@ -37,6 +38,10 @@ export const useAgentStatusStore = create<AgentStatusState>((set, get) => ({
             localStorage.setItem('luffyMessages', JSON.stringify(newMessages));
             return { luffyMessages: newMessages };
         });
+    },
+    clearLuffyMessages: () => {
+        localStorage.removeItem('luffyMessages');
+        set({ luffyMessages: [] });
     },
     isAgentActive: (name) => {
         const status = get().statuses[name];

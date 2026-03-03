@@ -1,17 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageCircle, X, Send, Trash2 } from 'lucide-react';
 import { useLuffyChat } from '../luffy/useLuffyChat';
 import LuffyImg from "@/Assets/luffy.png";
 import { AgentAvatar } from './common/AgentAvatar';
 import { useAgentStatusStore } from '../store/agentStatusStore';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useToast } from './ui/Toast';
 
 export const LuffyChat: React.FC = () => {
     const { isLuffyChatOpen: isOpen, setLuffyChatOpen: setIsOpen } = useAgentStatusStore();
     const [inputValue, setInputValue] = useState('');
-    const { messages, isThinking, isConnected, sendMessage } = useLuffyChat();
+    const { messages, isThinking, isConnected, sendMessage, clearMessages } = useLuffyChat();
+    const toast = useToast();
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -98,12 +100,28 @@ export const LuffyChat: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => setIsOpen(false)}
-                                    className="p-2 hover:bg-white/5 rounded-lg transition-colors text-white/40 hover:text-white"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    {messages.length > 0 && (
+                                        <button
+                                            onClick={() => {
+                                                if (confirm('Clear all messages?')) {
+                                                    clearMessages();
+                                                    toast.success('Chat cleared');
+                                                }
+                                            }}
+                                            className="p-2 hover:bg-red-500/10 rounded-lg transition-colors text-white/40 hover:text-red-400 group"
+                                            title="Clear Chat"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => setIsOpen(false)}
+                                        className="p-2 hover:bg-white/5 rounded-lg transition-colors text-white/40 hover:text-white"
+                                    >
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Status Bar */}
